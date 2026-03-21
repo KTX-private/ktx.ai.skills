@@ -19,14 +19,20 @@ node --version
 ## 一键安装（推荐）
 
 ```bash
-# 克隆并配置
+# 克隆仓库
 git clone https://github.com/KTX-private/ktx.ai.skills.git
 cd ktx.ai.skills
-node scripts/setup_config.js
 
-# 验证安装
+# 安装依赖（可选，用于运行测试）
+npm install
+
+# 验证安装（公共接口无需 API 密钥即可使用）
 node test/test_connection.js
 ```
+
+**注意：** 公共接口（行情数据、价格、订单簿）无需配置 API 密钥即可使用。你可以在需要使用私有接口（交易、账户管理）时再配置 API 密钥。
+
+---
 
 ---
 
@@ -72,7 +78,34 @@ node scripts/setup_config.js
 
 ---
 
-## 配置 API 密钥
+## 配置 API 密钥（可选）
+
+**公共接口不需要配置 API 密钥。** 你可以在需要使用私有操作时再配置。
+
+公共接口（无需 API 密钥）：
+- ✅ 行情数据查询
+- ✅ 价格查询
+- ✅ 订单簿
+- ✅ K线（蜡烛图）数据
+- ✅ 成交记录
+- ✅ WebSocket 公共数据流
+
+私有接口（需要 API 密钥）：
+- 🔑 交易操作
+- 🔑 账户余额
+- 🔑 订单管理
+- 🔑 仓位信息
+- 🔑 充值/提现
+
+### 何时配置 API 密钥
+
+在以下情况下配置 API 密钥：
+- 执行交易
+- 查询账户余额
+- 管理订单
+- 访问私有账户数据
+
+### 配置方法
 
 **方式 1：交互式配置（推荐）**
 ```bash
@@ -113,19 +146,36 @@ node test/test_connection.js
 
 ## 使用示例
 
-```javascript
-const { KTXPrivateClient } = require('./ktx.ai.skills/scripts/ktx_client');
-const client = new KTXPrivateClient();
+### 使用公共接口（无需 API 密钥）
 
-// 查询账户余额
-const balance = await client.getMainAccounts();
-console.log('账户余额:', balance);
+```javascript
+const { KTXPublicClient } = require('./ktx.ai.skills/scripts/ktx_client');
+const client = new KTXPublicClient();
 
 // 查询市场价格
 const ticker = await client.getTicker('BTC_USDT');
 console.log('BTC/USDT 价格:', ticker);
 
-// 创建订单
+// 查询订单簿
+const orderbook = await client.getOrderBook('BTC_USDT');
+console.log('订单簿:', orderbook);
+
+// 查询 K线数据
+const candles = await client.getCandles('BTC_USDT', '1h');
+console.log('K线数据:', candles);
+```
+
+### 使用私有接口（需要 API 密钥）
+
+```javascript
+const { KTXPrivateClient } = require('./ktx.ai.skills/scripts/ktx_client');
+const client = new KTXPrivateClient();
+
+// 查询账户余额（需要 API 密钥）
+const balance = await client.getMainAccounts();
+console.log('账户余额:', balance);
+
+// 创建订单（需要 API 密钥）
 const order = await client.buyLimit('BTC_USDT', 0.001, 70000);
 console.log('订单创建成功:', order);
 ```

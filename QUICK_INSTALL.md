@@ -21,14 +21,20 @@ If not installed, install Node.js:
 ## Quick Install (Recommended)
 
 ```bash
-# Clone and configure
+# Clone the repository
 git clone https://github.com/KTX-private/ktx.ai.skills.git
 cd ktx.ai.skills
-node scripts/setup_config.js
 
-# Verify installation
+# Install dependencies (optional, for running tests)
+npm install
+
+# Verify installation (public APIs work without API key)
 node test/test_connection.js
 ```
+
+**Note:** Public APIs (market data, tickers, order books) work immediately without API key configuration. You can configure API keys later for private operations (trading, account management).
+
+---
 
 ---
 
@@ -74,7 +80,34 @@ node scripts/setup_config.js
 
 ---
 
-## Configure API Keys
+## Configure API Keys (Optional)
+
+**API key configuration is NOT required for public APIs.** You can configure it later when you need private operations.
+
+Public APIs (work without API key):
+- ✅ Market data queries
+- ✅ Ticker prices
+- ✅ Order books
+- ✅ K-line (candlestick) data
+- ✅ Trade history
+- ✅ WebSocket public streams
+
+Private APIs (require API key):
+- 🔑 Trading operations
+- 🔑 Account balance
+- 🔑 Order management
+- 🔑 Position information
+- 🔑 Deposit/withdraw
+
+### When to Configure API Keys
+
+Configure API keys when you need to:
+- Execute trades
+- Query your account balance
+- Manage your orders
+- Access private account data
+
+### Configuration Methods
 
 **Option 1: Interactive Setup (Recommended)**
 ```bash
@@ -113,17 +146,38 @@ Success output:
 
 ## Usage Examples
 
+### Using Public APIs (No API Key Required)
+
+```javascript
+const { KTXPublicClient } = require('./ktx.ai.skills/scripts/ktx_client');
+const client = new KTXPublicClient();
+
+// Query market price
+const ticker = await client.getTicker('BTC_USDT');
+console.log('BTC/USDT Price:', ticker);
+
+// Query order book
+const orderbook = await client.getOrderBook('BTC_USDT');
+console.log('Order Book:', orderbook);
+
+// Query k-line data
+const candles = await client.getCandles('BTC_USDT', '1h');
+console.log('Candles:', candles);
+```
+
+### Using Private APIs (API Key Required)
+
 ```javascript
 const { KTXPrivateClient } = require('./ktx.ai.skills/scripts/ktx_client');
 const client = new KTXPrivateClient();
 
-// Query account balance
+// Query account balance (requires API key)
 const balance = await client.getMainAccounts();
-console.log(balance);
+console.log('Account Balance:', balance);
 
-// Query market price
-const ticker = await client.getTicker('BTC_USDT');
-console.log(ticker);
+// Create order (requires API key)
+const order = await client.buyLimit('BTC_USDT', 0.001, 70000);
+console.log('Order Created:', order);
 ```
 
 ---
