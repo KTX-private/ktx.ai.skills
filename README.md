@@ -2,6 +2,24 @@
 
 Complete API integration skill for KTX Exchange, providing market data queries, account management, trading operations, and more.
 
+## 📦 Installation
+
+**[Quick Install Guide](./QUICK_INSTALL.md)** - 5分钟快速安装
+
+**[Full Installation Guide](./INSTALLATION_GUIDE.md)** - 详细安装指南（支持 Claude Code、OpenAI Codex 等）
+
+### Quick Start
+
+```bash
+# Clone and configure
+git clone https://github.com/KTX-private/ktx.ai.skills.git
+cd ktx.ai.skills
+node scripts/setup_config.js
+
+# Verify installation
+node test/test_connection.js
+```
+
 ## Features
 
 - ✅ Complete REST API wrapper (public market data + private user data)

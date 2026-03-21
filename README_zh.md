@@ -2,6 +2,24 @@
 
 KTX交易所的完整API集成技能，提供行情查询、账户管理、交易操作等功能。
 
+## 📦 安装
+
+**[快速安装指南](./QUICK_INSTALL.md)** - 5分钟快速安装
+
+**[完整安装指南](./INSTALLATION_GUIDE.md)** - 详细安装指南（支持 Claude Code、OpenAI Codex 等 AI Agent 平台）
+
+### 快速开始
+
+```bash
+# 克隆并配置
+git clone https://github.com/KTX-private/ktx.ai.skills.git
+cd ktx.ai.skills
+node scripts/setup_config.js
+
+# 验证安装
+node test/test_connection.js
+```
+
 ## 功能特性
 
 - ✅ 完整的REST API封装（公共行情 + 私有用户数据）
