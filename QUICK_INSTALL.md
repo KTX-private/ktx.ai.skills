@@ -1,6 +1,8 @@
-# KTX Skills 快速安装
+# KTX Skills Quick Installation
 
-## 一键安装（推荐）
+**[中文版快速安装指南](./QUICK_INSTALL_zh.md)** | [中文完整安装指南](./INSTALLATION_GUIDE.md)
+
+## Quick Install (Recommended)
 
 ```bash
 # 克隆并配置

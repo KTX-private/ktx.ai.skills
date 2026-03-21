@@ -6,6 +6,8 @@ Complete API integration skill for KTX Exchange, providing market data queries, 
 
 **[Quick Install Guide](./QUICK_INSTALL.md)** - 5分钟快速安装
 
+**[快速安装指南 (中文)](./QUICK_INSTALL_zh.md)** - 5分钟快速安装（中文版）
+
 **[Full Installation Guide](./INSTALLATION_GUIDE.md)** - 详细安装指南（支持 Claude Code、OpenAI Codex 等）
 
 ### Quick Start
