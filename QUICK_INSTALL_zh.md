@@ -1,5 +1,21 @@
 # KTX Skills 快速安装
 
+## 系统要求
+
+**需要 Node.js v16 或更高版本。**
+
+检查 Node.js 版本：
+```bash
+node --version
+```
+
+如果未安装，请安装 Node.js：
+- **macOS/Linux:** `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && source ~/.bashrc && nvm install --lts`
+- **Windows:** 访问 https://nodejs.org/ 下载安装
+- **更多选项:** 查看 [完整安装指南](./INSTALLATION_GUIDE.md)
+
+---
+
 ## 一键安装（推荐）
 
 ```bash

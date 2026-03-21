@@ -2,6 +2,99 @@
 
 本指南详细介绍如何将 KTX Skills 安装到不同的 AI Agent 平台，包括手动安装和各平台自动安装。
 
+## 系统要求
+
+### Node.js 版本要求
+
+**最低要求：** Node.js v16.0.0 或更高版本
+
+**推荐版本：** Node.js v18.x LTS 或 v20.x LTS
+
+### 检查 Node.js 版本
+
+```bash
+# 检查是否已安装 Node.js
+node --version
+
+# 如果未安装或版本过低，请参考下面的安装说明
+```
+
+### 安装 Node.js
+
+#### 方法 1：使用官方安装包（推荐）
+
+**macOS / Linux:**
+```bash
+# 使用 nvm (Node Version Manager) 安装
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc  # 或 source ~/.zshrc (取决于你的 shell)
+
+# 安装最新的 LTS 版本
+nvm install --lts
+
+# 使用 LTS 版本
+nvm use --lts
+```
+
+**Windows:**
+1. 访问 https://nodejs.org/
+2. 下载并安装 LTS 版本（推荐 20.x LTS）
+3. 重启命令行窗口
+
+#### 方法 2：使用包管理器
+
+**macOS (Homebrew):**
+```bash
+brew install node
+```
+
+**Ubuntu/Debian:**
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+**CentOS/RHEL:**
+```bash
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo yum install -y nodejs
+```
+
+#### 方法 3：在 AI Agent 环境中安装 Node.js
+
+如果你的 AI Agent 运行在受限环境中，可能需要通过以下方式安装：
+
+**在 AI Agent 的系统提示中：**
+
+```
+请先安装 Node.js v18 或更高版本：
+- macOS/Linux: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && source ~/.bashrc && nvm install --lts
+- Windows: 访问 https://nodejs.org/ 下载安装包
+```
+
+**在 AI Agent 的代码执行环境中：**
+
+```bash
+# 如果有权限，使用 nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm install --lts
+nvm use --lts
+```
+
+### 验证 Node.js 安装
+
+```bash
+# 检查版本
+node --version  # 应显示 v18.x.x 或更高
+
+# 检查 npm 版本
+npm --version
+```
+
+---
+
 ## 目录
 
 - [手动安装](#手动安装)
@@ -240,6 +333,59 @@ cp -r ktx.ai.skills ~/.config/claude/skills/
 ---
 
 ## 其他 AI Agent 安装
+
+**重要提示：** 所有 AI Agent 平台都需要先安装 Node.js v16 或更高版本才能使用 KTX Skills。
+
+### 如何在 AI Agent 中安装 Node.js
+
+#### 方法 1：在系统提示中要求安装
+
+在与 AI Agent 对话时，首先要求安装 Node.js：
+
+```
+请先安装 Node.js v18 或更高版本，然后再使用 KTX Skills。
+```
+
+AI Agent 应该会执行以下命令（或类似命令）：
+
+```bash
+# macOS/Linux
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc  # 或 source ~/.zshrc
+nvm install --lts
+nvm use --lts
+
+# 验证安装
+node --version
+```
+
+#### 方法 2：在 AI Agent 配置中预安装 Node.js
+
+某些 AI Agent 允许在启动配置中安装依赖：
+
+**示例配置：**
+```json
+{
+  "preinstall_commands": [
+    "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash",
+    "source ~/.bashrc",
+    "nvm install --lts"
+  ]
+}
+```
+
+#### 方法 3：使用 Docker 镜像（推荐）
+
+如果使用 Docker，可以选择预装 Node.js 的镜像：
+
+```dockerfile
+FROM node:20-alpine
+
+# 安装 KTX Skills
+WORKDIR /app
+COPY . /app/
+RUN npm install
+```
 
 ### AutoGPT
 

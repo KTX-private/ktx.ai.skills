@@ -2,6 +2,22 @@
 
 **[中文版快速安装指南](./QUICK_INSTALL_zh.md)** | [Full Installation Guide](./INSTALLATION_GUIDE.md)
 
+## Requirements
+
+**Node.js v16 or higher is required.**
+
+Check your Node.js version:
+```bash
+node --version
+```
+
+If not installed, install Node.js:
+- **macOS/Linux:** `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && source ~/.bashrc && nvm install --lts`
+- **Windows:** Download from https://nodejs.org/
+- **More options:** See [Full Installation Guide](./INSTALLATION_GUIDE.md)
+
+---
+
 ## Quick Install (Recommended)
 
 ```bash

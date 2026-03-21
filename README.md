@@ -4,6 +4,12 @@ Complete API integration skill for KTX Exchange, providing market data queries, 
 
 ## 📦 Installation
 
+### Requirements
+
+- **Node.js** v16 or higher (v18+ LTS recommended)
+
+### Quick Start
+
 **[Quick Install Guide](./QUICK_INSTALL.md)** - 5分钟快速安装
 
 **[快速安装指南 (中文)](./QUICK_INSTALL_zh.md)** - 5分钟快速安装（中文版）
