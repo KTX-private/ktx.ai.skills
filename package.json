@@ -1,0 +1,30 @@
+{
+  "name": "ktx-exchange",
+  "version": "1.0.0",
+  "description": "KTX交易所集成技能 - 提供完整的行情查询、账户管理、交易操作功能",
+  "main": "scripts/ktx_client.js",
+  "scripts": {
+    "setup": "node scripts/setup_config.js",
+    "test": "node scripts/test_connection.js",
+    "example:market": "node scripts/examples/get_market_data.js",
+    "example:ws": "node scripts/examples/websocket_subscriber.js",
+    "example:trade": "node scripts/examples/trading_operations.js",
+    "example:config": "node scripts/examples/auto_configure_ktx.js"
+  },
+  "keywords": [
+    "ktx",
+    "exchange",
+    "trading",
+    "api",
+    "cryptocurrency",
+    "blockchain"
+  ],
+  "author": "KTX Exchange",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.14.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
