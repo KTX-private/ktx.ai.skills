@@ -1,41 +1,47 @@
 # KTX Skills Quick Installation
 
-**[中文版快速安装指南](./QUICK_INSTALL_zh.md)** | [中文完整安装指南](./INSTALLATION_GUIDE.md)
+**[中文版快速安装指南](./QUICK_INSTALL_zh.md)** | [Full Installation Guide](./INSTALLATION_GUIDE.md)
 
 ## Quick Install (Recommended)
 
 ```bash
-# 克隆并配置
+# Clone and configure
 git clone https://github.com/KTX-private/ktx.ai.skills.git
 cd ktx.ai.skills
 node scripts/setup_config.js
 
-# 验证安装
+# Verify installation
 node test/test_connection.js
 ```
 
 ---
 
-## Claude Code 安装
+## Claude Code Installation
 
 ```bash
-# 1. 复制到 Claude 技能目录
+# 1. Copy to Claude skills directory
 mkdir -p ~/.config/claude/skills
 cp -r ktx.ai.skills ~/.config/claude/skills/
 
-# 2. 重启 Claude Code
-# 3. 在对话中使用："请使用 KTX 技能查询余额"
+# 2. Restart Claude Code
+# 3. Use in conversation: "Please use KTX skill to query balance"
+```
+
+**For macOS users:**
+```bash
+mkdir -p ~/Library/Application\ Support/Claude/skills
+cp -r ktx.ai.skills ~/Library/Application\ Support/Claude/skills/
 ```
 
 ---
 
-## OpenAI Codex 安装
+## OpenAI Codex Installation
 
 ```bash
-# 方式 1: GitHub Codespaces
-# 访问仓库 → Code → Codespaces → Create codespace
+# Option 1: GitHub Codespaces
+# Visit repo → Code → Codespaces → Create codespace
 
-# 方式 2: 本地集成
+# Option 2: Local integration
 git clone https://github.com/KTX-private/ktx.ai.skills.git
 cd ktx.ai.skills
 npm install
@@ -44,14 +50,18 @@ node scripts/setup_config.js
 
 ---
 
-## 配置 API 密钥
+## Configure API Keys
 
-**方式 1：交互式配置（推荐）**
+**Option 1: Interactive Setup (Recommended)**
 ```bash
 node scripts/setup_config.js
 ```
 
-**方式 2：手动配置**
+Follow prompts to enter:
+- API Key
+- API Secret
+
+**Option 2: Manual Configuration**
 ```bash
 cat > ~/.ktx_exchange_config.json << EOF
 {
@@ -63,36 +73,39 @@ EOF
 
 ---
 
-## 验证
+## Verify Installation
 
 ```bash
 cd ktx.ai.skills
 node test/test_connection.js
 ```
 
-成功输出：✓ Connection successful
+Success output:
+```
+✓ Connection successful
+```
 
 ---
 
-## 使用示例
+## Usage Examples
 
 ```javascript
 const { KTXPrivateClient } = require('./ktx.ai.skills/scripts/ktx_client');
 const client = new KTXPrivateClient();
 
-// 查询余额
+// Query account balance
 const balance = await client.getMainAccounts();
 console.log(balance);
 
-// 查询价格
+// Query market price
 const ticker = await client.getTicker('BTC_USDT');
 console.log(ticker);
 ```
 
 ---
 
-## 详细文档
+## Detailed Documentation
 
-- [完整安装指南](./INSTALLATION_GUIDE.md)
-- [API 文档](./SKILL.md)
-- [使用示例](./scripts/examples/)
+- [Full Installation Guide](./INSTALLATION_GUIDE.md)
+- [API Documentation](./SKILL.md)
+- [Usage Examples](./scripts/examples/)
