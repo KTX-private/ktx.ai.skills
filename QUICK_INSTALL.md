@@ -35,7 +35,15 @@ cp -r ktx.ai.skills ~/Library/Application\ Support/Claude/skills/
 
 ---
 
-## OpenAI Codex Installation
+## OpenAI Platforms Installation
+
+KTX Skills supports all OpenAI platforms including:
+- OpenAI Codex
+- OpenAI ChatGPT (via API)
+- OpenAI Assistants API
+- Any OpenAI-based AI Agents
+
+### OpenAI Codex
 
 ```bash
 # Option 1: GitHub Codespaces

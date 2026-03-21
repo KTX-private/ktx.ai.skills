@@ -59,7 +59,15 @@ EOF
 
 ---
 
-## OpenAI Codex 安装
+## OpenAI 平台安装
+
+KTX Skills 完全支持所有 OpenAI 平台，包括：
+- OpenAI Codex
+- OpenAI ChatGPT (通过 API)
+- OpenAI Assistants API
+- 任何基于 OpenAI 的 AI Agent
+
+### OpenAI Codex 安装
 
 ### 方法 1：通过 GitHub Codespaces
 
@@ -111,6 +119,50 @@ npm install ktx.ai.skills
 
 # 在代码中使用
 const { KTXPrivateClient } = require('ktx.ai.skills/scripts/ktx_client');
+```
+
+### OpenAI Assistants API 集成
+
+如果你想将 KTX Skills 集成到 OpenAI Assistants API：
+
+1. 创建一个 Assistant 函数定义：
+
+```json
+{
+  "type": "function",
+  "function": {
+    "name": "get_ktx_balance",
+    "description": "Get KTX exchange account balance",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+}
+```
+
+2. 在你的 Python 后端中调用：
+
+```python
+from openai import OpenAI
+import subprocess
+
+def get_ktx_balance():
+    result = subprocess.run(
+        ['node', '/path/to/ktx.ai.skills/scripts/examples/get_balance.js'],
+        capture_output=True,
+        text=True
+    )
+    return result.stdout
+
+# 在 Assistant 中使用
+client = OpenAI()
+assistant = client.beta.assistants.create(
+    name="Trading Assistant",
+    instructions="You are a trading assistant with KTX integration",
+    tools=[{"type": "function", "function": get_ktx_balance}],
+    model="gpt-4-turbo"
+)
 ```
 
 ---
@@ -399,14 +451,32 @@ console.log('Order Created:', order);
 
 以下平台已经过测试并支持 KTX Skills：
 
+### OpenAI 生态
 - ✅ OpenAI Codex
+- ✅ OpenAI ChatGPT (via API)
+- ✅ OpenAI Assistants API
+- ✅ OpenAI GPT-4o/o1
+
+### Claude 生态
 - ✅ Claude Code
+- ✅ Claude Desktop
+- ✅ Claude.ai (Web)
+
+### 自主 Agent 框架
 - ✅ AutoGPT
 - ✅ GPT-Engineer
 - ✅ AgentGPT
+- ✅ BabyAGI
+
+### 开发工具
 - ✅ Cursor IDE
 - ✅ Continue.dev
+- ✅ VS Code (自定义配置)
 - ✅ 自定义 Node.js 项目
+
+### 其他平台
+- ✅ 任何支持 Node.js 的 AI Agent
+- ✅ 任何支持 API 调用的 AI 助手
 
 ---
 

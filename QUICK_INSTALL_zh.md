@@ -33,7 +33,15 @@ cp -r ktx.ai.skills ~/Library/Application\ Support/Claude/skills/
 
 ---
 
-## OpenAI Codex 安装
+## OpenAI 平台安装
+
+KTX Skills 完全支持所有 OpenAI 平台，包括：
+- OpenAI Codex
+- OpenAI ChatGPT (通过 API)
+- OpenAI Assistants API
+- 任何基于 OpenAI 的 AI Agent
+
+### OpenAI Codex
 
 ```bash
 # 方式 1: GitHub Codespaces
