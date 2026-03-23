@@ -1,8 +1,10 @@
-# KTX Skills Quick Installation
+# KTX Skills Quick Installation Guide
 
 **[中文版快速安装指南](./QUICK_INSTALL_zh.md)** | [Full Installation Guide](./INSTALLATION_GUIDE.md)
 
-## Requirements
+---
+
+## 1. Environment Requirements
 
 **Node.js v16 or higher is required.**
 
@@ -18,46 +20,43 @@ If not installed, install Node.js:
 
 ---
 
-## Quick Install (Recommended)
+## 2. Quick Install (Recommended)
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/KTX-private/ktx.ai.skills.git
 cd ktx.ai.skills
 
-# Install dependencies (optional, for running tests)
+# (Optional) Install dependencies for running tests
 npm install
 
 # Verify installation (public APIs work without API key)
 node test/test_connection.js
 ```
 
-**Note:** Public APIs (market data, tickers, order books) work immediately without API key configuration. You can configure API keys later for private operations (trading, account management).
+**Note:** Public APIs (market data, tickers, order books, K-lines) work immediately without API key configuration. You can configure API keys later for private operations (trading, account management).
 
 ---
 
----
+## 3. Install in Claude Code
 
-## Claude Code Installation
-
+**For Linux/macOS (General):**
 ```bash
-# 1. Copy to Claude skills directory
 mkdir -p ~/.config/claude/skills
 cp -r ktx.ai.skills ~/.config/claude/skills/
-
-# 2. Restart Claude Code
-# 3. Use in conversation: "Please use KTX skill to query balance"
 ```
 
-**For macOS users:**
+**For macOS (Library path):**
 ```bash
 mkdir -p ~/Library/Application\ Support/Claude/skills
 cp -r ktx.ai.skills ~/Library/Application\ Support/Claude/skills/
 ```
 
+After installation, restart Claude Code and use in conversation: "Please use KTX skill to query balance"
+
 ---
 
-## OpenAI Platforms Installation
+## 4. Use in OpenAI Platforms
 
 KTX Skills supports all OpenAI platforms including:
 - OpenAI Codex
@@ -65,13 +64,11 @@ KTX Skills supports all OpenAI platforms including:
 - OpenAI Assistants API
 - Any OpenAI-based AI Agents
 
-### OpenAI Codex
+**Option 1: GitHub Codespaces**
+- Visit repo → Code → Codespaces → Create codespace
 
+**Option 2: Local Integration**
 ```bash
-# Option 1: GitHub Codespaces
-# Visit repo → Code → Codespaces → Create codespace
-
-# Option 2: Local integration
 git clone https://github.com/KTX-private/ktx.ai.skills.git
 cd ktx.ai.skills
 npm install
@@ -80,11 +77,11 @@ node scripts/setup_config.js
 
 ---
 
-## Configure API Keys (Optional)
+## 5. Optional: Configure API Keys
 
-**API key configuration is NOT required for public APIs.** You can configure it later when you need private operations.
+**API key configuration is NOT required for public APIs.** Configure it later when you need private operations.
 
-Public APIs (work without API key):
+**Public APIs (work without API key):**
 - ✅ Market data queries
 - ✅ Ticker prices
 - ✅ Order books
@@ -92,28 +89,24 @@ Public APIs (work without API key):
 - ✅ Trade history
 - ✅ WebSocket public streams
 
-Private APIs (require API key):
+**Private APIs (require API key):**
 - 🔑 Trading operations
 - 🔑 Account balance
 - 🔑 Order management
 - 🔑 Position information
 - 🔑 Deposit/withdraw
 
-### When to Configure API Keys
-
+**When to Configure API Keys:**
 Configure API keys when you need to:
 - Execute trades
 - Query your account balance
 - Manage your orders
 - Access private account data
 
-### Configuration Methods
-
 **Option 1: Interactive Setup (Recommended)**
 ```bash
 node scripts/setup_config.js
 ```
-
 Follow prompts to enter:
 - API Key
 - API Secret
@@ -130,7 +123,7 @@ EOF
 
 ---
 
-## Verify Installation
+## 6. Verify Installation
 
 ```bash
 cd ktx.ai.skills
@@ -144,12 +137,12 @@ Success output:
 
 ---
 
-## Usage Examples
+## 7. Usage Examples
 
 ### Using Public APIs (No API Key Required)
 
 ```javascript
-const { KTXPublicClient } = require('./ktx.ai.skills/scripts/ktx_client');
+const { KTXPublicClient } = require('./scripts/ktx_client');
 const client = new KTXPublicClient();
 
 // Query market price
@@ -168,7 +161,7 @@ console.log('Candles:', candles);
 ### Using Private APIs (API Key Required)
 
 ```javascript
-const { KTXPrivateClient } = require('./ktx.ai.skills/scripts/ktx_client');
+const { KTXPrivateClient } = require('./scripts/ktx_client');
 const client = new KTXPrivateClient();
 
 // Query account balance (requires API key)
@@ -182,17 +175,11 @@ console.log('Order Created:', order);
 
 ---
 
-## Detailed Documentation
-
-- [Full Installation Guide](./INSTALLATION_GUIDE.md)
-- [API Documentation](./SKILL.md)
-- [Usage Examples](./scripts/examples/)
-
-## MCP ENDPOINT
+## 8. MCP Server Integration
 
 **MCP Server URL:** `https://api.ktx.info/mcp`
 
-**Available Tools:**
+**Available MCP Tools:**
 
 | Tool Name | Status | Description |
 |-----------|--------|-------------|
@@ -207,7 +194,7 @@ console.log('Order Created:', order);
 - `spot` - Spot trading (default)
 - `lpc` - USDT-Margined Perpetual Contracts
 
-**Example Request:**
+**Example MCP Request:**
 ```json
 {
   "jsonrpc": "2.0",
@@ -223,3 +210,59 @@ console.log('Order Created:', order);
 }
 ```
 
+**Step 1: Establish SSE Connection**
+```bash
+curl -sN -H "Accept: text/event-stream" https://api.ktx.info/mcp
+```
+
+Response:
+```
+event: endpoint
+data: /mcp/message?sessionId=<SESSION_ID>
+```
+
+**Step 2: Call MCP Tool via POST**
+```bash
+curl -X POST "https://api.ktx.info/mcp/message?sessionId=<SESSION_ID>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "get_ticker",
+      "arguments": {
+        "symbol": "BTC_USDT",
+        "market": "spot"
+      }
+    }
+  }'
+```
+
+---
+
+## 9. Detailed Documentation
+
+- [Full Installation Guide](./INSTALLATION_GUIDE.md)
+- [API Documentation](./SKILL.md)
+- [Usage Examples](./scripts/examples/)
+- [MCP Tools Reference](./API_SUPPORT_SUMMARY.md)
+
+---
+
+## Troubleshooting
+
+### Connection Failed
+- Check Node.js version: `node --version` (must be v16+)
+- Verify internet connection
+- Check API endpoint status: `curl https://api.ktx.info/health`
+
+### API Key Not Working
+- Verify API key format (should be 32-character hex string)
+- Check if IP is whitelisted (if applicable)
+- Contact support if issues persist
+
+### Skills Not Found in Claude
+- Ensure skills directory path is correct
+- Restart Claude Code completely
+- Check Claude Code settings for skills directory location
