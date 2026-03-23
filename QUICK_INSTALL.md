@@ -20,25 +20,172 @@ If not installed, install Node.js:
 
 ---
 
-## 2. Quick Install (Recommended)
+## 2. One-Click Installation Overview
+
+KTX Skills provides one-click installation scripts that complete the configuration of KTX MCP service and Skills in seconds:
+
+- **Cursor Users:**
+  Command: `bash skills/ktx-mcp-cursor-installer/scripts/install.sh`
+  
+- **OpenClaw Users:**
+  Command: `./skills/ktx-mcp-openclaw-installer/scripts/install.sh`
+  
+- **Claude Code (Claude CLI) Users:**
+  Command: `bash skills/ktx-mcp-claude-installer/scripts/install.sh`
+  
+- **Codex Users:**
+  Command: `bash skills/ktx-mcp-codex-installer/scripts/install.sh`
+
+---
+
+## 3. Quick Start (Natural Language)
+
+After installing the AI assistant and launching it, simply speak to it:
+
+> "Help me automatically install KTX Skills and MCP: https://github.com/KTX-private/ktx.ai.skills"
+
+The assistant will automatically complete all installation steps.
+
+---
+
+## 4. Prerequisites
+
+Before installation, ensure:
+- AI agent environment that supports Skill loading (Cursor, OpenClaw, Claude CLI, Codex, etc.)
+- Node.js installed (including npx)
+- Internet connection
+
+---
+
+## 5. Installation by Framework
+
+### Cursor Users
+
+**Step 1:** Download or execute at repository root:
+```bash
+bash skills/ktx-mcp-cursor-installer/scripts/install.sh
+```
+
+**Step 2:** Speak to AI assistant:
+"Help me to install KTX Skills"
+
+---
+
+### OpenClaw Users
+
+**Step 1:** Default installation (all MCP services):
+```bash
+./skills/ktx-mcp-openclaw-installer/scripts/install.sh
+```
+
+**Step 2:** Selective installation:
+```bash
+./skills/ktx-mcp-openclaw-installer/scripts/install.sh --select
+```
+
+**Step 3:** Speak to AI assistant:
+"Help me to install KTX Skills"
+
+---
+
+### Claude Code (Claude CLI) Users
+
+**Step 1:** Execute at repository root:
+```bash
+bash skills/ktx-mcp-claude-installer/scripts/install.sh
+```
+
+**Step 2:** Optional parameters:
+- `--no-skills` - Install MCP only
+- `--mcp main` - Install specific MCP
+- `--mcp dex` - Install only specified MCP
+
+**Step 3:** Speak to AI assistant:
+"Help me to install KTX Skills"
+
+---
+
+### Codex Users
+
+**Step 1:** Execute at repository root:
+```bash
+bash skills/ktx-mcp-codex-installer/scripts/install.sh
+```
+
+**Step 2:** Optional parameters (same as above):
+- `--no-skills` - Install MCP only
+- `--mcp main` - Install specific MCP
+- `--mcp dex` - Install only specified MCP
+
+**Step 3:** Speak to AI assistant:
+"Help me to install KTX Skills"
+
+---
+
+## 6. Universal Installation (npx Method, Recommended)
+
+**Step 1:** Confirm npx is installed:
+```bash
+npx -v
+```
+
+**Step 2:** Interactive installation of all Skills:
+```bash
+npx skills add https://github.com/KTX-private/ktx.ai.skills
+```
+
+**Step 3:** Install single Skill (example):
+```bash
+npx skills add https://github.com/KTX-private/ktx.ai.skills --skill ktx-exchange
+```
+
+---
+
+## 7. Natural Language Installation Examples
+
+After installation is complete, you can use natural language commands in Claude CLI or Codex CLI:
+
+### Market Data Queries
+```
+Get KTX trading pairs list
+Query BTC_USDT market price
+Get order book depth for BTC_USDT
+```
+
+### Trading Operations
+```
+Check my account balance
+Buy 0.1 BTC at market price
+Sell 5 ETH with limit order
+```
+
+### WebSocket Subscriptions
+```
+Subscribe to BTC_USDT real-time quotes
+Listen to ETH_USDT price changes
+```
+
+---
+
+## 8. Manual Installation (Clone Method)
 
 ```bash
 # Clone repository
 git clone https://github.com/KTX-private/ktx.ai.skills.git
 cd ktx.ai.skills
 
-# (Optional) Install dependencies for running tests
+# Install dependencies (optional, for running tests)
 npm install
 
 # Verify installation (public APIs work without API key)
 node test/test_connection.js
 ```
 
-**Note:** Public APIs (market data, tickers, order books, K-lines) work immediately without API key configuration. You can configure API keys later for private operations (trading, account management).
+**Note:** Public APIs (market data, tickers, order books) work immediately without API key configuration. You can configure API keys later for private operations (trading, account management).
 
 ---
 
-## 3. Install in Claude Code
+## 9. Install in Claude Code
 
 **For Linux/macOS (General):**
 ```bash
@@ -56,7 +203,84 @@ After installation, restart Claude Code and use in conversation: "Please use KTX
 
 ---
 
-## 4. Use in OpenAI Platforms
+## 10. Use in OpenClaw (小龙虾)
+
+### Method 1: Conversational Installation (Recommended)
+
+OpenClaw is a popular AI agent with built-in GitHub integration. You can install KTX Skills with just a simple message:
+
+**In the OpenClaw interface (e.g., Telegram, Feishu), send:**
+```
+Help me install this skill: https://github.com/KTX-private/ktx.ai.skills
+```
+
+The assistant will automatically:
+1. Fetch the repository
+2. Configure the environment
+3. Attempt to load the KTX Skills
+
+### Method 2: Manual Installation
+
+If you prefer manual installation:
+
+**Step 1: Clone repository**
+```bash
+git clone https://github.com/KTX-private/ktx.ai.skills.git
+cd ktx.ai.skills
+
+# Install dependencies (optional)
+npm install
+```
+
+**Step 2: Add to OpenClaw Skills Directory**
+
+OpenClaw automatically loads skills from the `skills` subdirectory. Ensure the KTX Skills structure follows the OpenClaw skills format:
+
+```
+ktx.skills/
+├── manifest.json          # Skill metadata (required)
+├── README.md             # Skill description
+└── scripts/
+    └── ...            # Skill scripts
+```
+
+**Step 3: Restart OpenClaw**
+
+After adding the skills directory:
+1. Go to OpenClaw settings
+2. Navigate to Skills / Plugins section
+3. Refresh or restart OpenClaw
+4. The KTX Skills should appear in the available skills list
+
+### Supported Features
+
+Once installed, you can use KTX Skills in OpenClaw for:
+- Query market data (prices, order books, K-lines)
+- Check account balance (requires API key)
+- Place orders (requires API key)
+- WebSocket subscriptions for real-time data
+
+### Example Conversations
+
+After installation, you can use natural language commands:
+
+**Market Queries:**
+```
+Query BTC_USDT price on KTX
+Get order book depth for ETH_USDT
+Fetch 1-hour K-line for BTC_USDT
+```
+
+**Trading Operations:**
+```
+Check my account balance
+Buy 0.1 BTC with 10x leverage
+Cancel pending order #12345
+```
+
+---
+
+## 11. Use in OpenAI Platforms
 
 KTX Skills supports all OpenAI platforms including:
 - OpenAI Codex
@@ -64,20 +288,9 @@ KTX Skills supports all OpenAI platforms including:
 - OpenAI Assistants API
 - Any OpenAI-based AI Agents
 
-**Option 1: GitHub Codespaces**
-- Visit repo → Code → Codespaces → Create codespace
-
-**Option 2: Local Integration**
-```bash
-git clone https://github.com/KTX-private/ktx.ai.skills.git
-cd ktx.ai.skills
-npm install
-node scripts/setup_config.js
-```
-
 ---
 
-## 5. Optional: Configure API Keys
+## 11. Optional: Configure API Keys
 
 **API key configuration is NOT required for public APIs.** Configure it later when you need private operations.
 
@@ -123,7 +336,7 @@ EOF
 
 ---
 
-## 6. Verify Installation
+## 12. Verify Installation
 
 ```bash
 cd ktx.ai.skills
@@ -137,7 +350,7 @@ Success output:
 
 ---
 
-## 7. Usage Examples
+## 13. Usage Examples
 
 ### Using Public APIs (No API Key Required)
 
@@ -175,7 +388,7 @@ console.log('Order Created:', order);
 
 ---
 
-## 8. MCP Server Integration
+## 14. MCP Server Integration
 
 **MCP Server URL:** `https://api.ktx.info/mcp`
 
@@ -241,16 +454,15 @@ curl -X POST "https://api.ktx.info/mcp/message?sessionId=<SESSION_ID>" \
 
 ---
 
-## 9. Detailed Documentation
+## 15. Detailed Documentation
 
 - [Full Installation Guide](./INSTALLATION_GUIDE.md)
 - [API Documentation](./SKILL.md)
 - [Usage Examples](./scripts/examples/)
-- [MCP Tools Reference](./API_SUPPORT_SUMMARY.md)
 
 ---
 
-## Troubleshooting
+## 16. Troubleshooting
 
 ### Connection Failed
 - Check Node.js version: `node --version` (must be v16+)
@@ -266,3 +478,42 @@ curl -X POST "https://api.ktx.info/mcp/message?sessionId=<SESSION_ID>" \
 - Ensure skills directory path is correct
 - Restart Claude Code completely
 - Check Claude Code settings for skills directory location
+
+---
+
+## 17. Security Considerations
+
+### 1. API Key Security
+- Never hardcode API keys in your code
+- Config files are only stored locally (`~/.ktx_exchange_config.json`)
+- Never commit config files to version control
+
+### 2. Permission Control
+- Use `View` permission for query-only operations
+- Use `Trade` permission for trading operations
+- Create different API keys for different purposes
+
+### 3. Signature Security
+- Use HTTPS for all API calls
+- Rotate API keys periodically
+- Keep signature expiration time reasonably short
+
+### 4. Fund Security
+- Test with small amounts first
+- Verify order parameters before execution
+- Set stop-loss limits when possible
+
+---
+
+## 18. Risk Disclaimer
+
+⚠️ **Risk Warning:** 
+- The above examples and operations are for API demonstration only
+- Futures trading carries extremely high risk
+- Leverage trading can result in complete loss of principal
+- Market prices fluctuate rapidly, actual execution may differ from expected
+- Investment involves risk, proceed with caution
+- Please understand futures trading mechanics and risks before operating
+- Configure leverage reasonably based on your risk tolerance
+
+---
