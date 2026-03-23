@@ -239,3 +239,16 @@ npm update
 - 🔧 [安装指南](./INSTALLATION_GUIDE.md)
 - 💡 [使用示例](./scripts/examples/)
 - 🐛 [问题反馈](https://github.com/KTX-private/ktx.ai.skills/issues)
+
+
+## MCP ENDPOINT
+suport:
+- get_trading_pairs	✅	正常返回所有交易对数据
+- get_ticker	✅	正常返回单个交易对ticker数据
+- get_all_tickers	✅	正常返回所有交易对信息（通过products端点）
+- get_orderbook	✅	正常返回订单簿深度数据
+- get_kline	✅	正常返回K线数据
+- get_trades	✅	正常返回成交记录
+
+endpoint
+ - https://api.ktx.info/mcp

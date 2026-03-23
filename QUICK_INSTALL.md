@@ -187,3 +187,39 @@ console.log('Order Created:', order);
 - [Full Installation Guide](./INSTALLATION_GUIDE.md)
 - [API Documentation](./SKILL.md)
 - [Usage Examples](./scripts/examples/)
+
+## MCP ENDPOINT
+
+**MCP Server URL:** `https://api.ktx.info/mcp`
+
+**Available Tools:**
+
+| Tool Name | Status | Description |
+|-----------|--------|-------------|
+| get_trading_pairs | ✅ Working | Query all available trading pairs on KTX exchange |
+| get_ticker | ✅ Working | Get 24h ticker data for a specific trading pair |
+| get_all_tickers | ✅ Working | Get 24h ticker data for all trading pairs (via products endpoint) |
+| get_orderbook | ✅ Working | Query order book depth for a trading pair |
+| get_kline | ✅ Working | Query K-line (candlestick) data for a trading pair |
+| get_trades | ✅ Working | Query recent trade history for a trading pair |
+
+**Market Types:**
+- `spot` - Spot trading (default)
+- `lpc` - USDT-Margined Perpetual Contracts
+
+**Example Request:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_ticker",
+    "arguments": {
+      "symbol": "BTC_USDT",
+      "market": "spot"
+    }
+  }
+}
+```
+
