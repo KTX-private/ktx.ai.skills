@@ -1,323 +1,400 @@
-# KTX API文档
+# KTX API Documentation
 
-## 基础信息
+## Base Information
 
-### Base URLs
-
-| 类型 | URL |
+| Type | URL |
 |------|-----|
-| 行情数据REST | `https://api.ktx.com/api` |
-| 用户数据REST | `https://api.ktx.com/papi` |
-| 行情WebSocket | `wss://m-stream.ktx.com` |
-| 用户数据WebSocket | `wss://u-stream.ktx.com` |
+| Market Data REST | `https://api.ktx.app/api` |
+| User Data REST | `https://api.ktx.app/papi` |
+| Market WebSocket | `wss://m-stream.ktx.app` |
+| User WebSocket | `wss://u-stream.ktx.app` |
 
-### 请求方法
+---
 
-- `GET`：查询行情或账户等数据
-- `POST`：提交下单、提现、划转等写操作
+## Request Methods
 
-### 参数位置
+- `GET`: Query market or account data
+- `POST`: Submit orders, deposits, transfers, etc.
 
-- GET请求：参数放在URL Query String
-- POST请求：参数放在JSON Body
+---
 
-### 响应格式
+## Parameters Location
 
-所有接口返回JSON格式数据。
+- **GET requests**: Parameters in URL Query String
+- **POST requests**: Parameters in JSON Body
 
-## 流量限制
+---
 
-| 限制类型 | 限制值 | 说明 |
-|---------|--------|------|
-| 请求频率 | 每10秒最多10,000次 | 超限返回错误码`-20007` |
-| CPU使用 | 每10秒最多10,000点 | 超限返回错误码`-20006` |
-| 响应头 | `Ktx-Usage: t1:t2:t3` | 查看当前使用情况 |
+## Response Format
 
-## 认证与签名
+All interfaces return JSON format data.
 
-### 私有接口HTTP头
+---
 
-所有私有接口需在HTTP头中包含：
+## Rate Limits
 
-| 头部名称 | 说明 |
-|---------|------|
+| Limit Type | Limit Value | Description |
+|-------------|-------------|-------------------|
+| Request Rate | 10,000 requests per 10 seconds | Rate limit exceeded error code `-20007` |
+| CPU Usage | 10,000 CPU points per 10 seconds | CPU limit exceeded error code `-20006` |
+| Response Headers | `Ktx-Usage: t1:t2:t3` | Check current usage |
+
+---
+
+## Authentication & Signing
+
+### Required HTTP Headers
+
+All private interfaces require authentication in HTTP headers:
+
+| Header Name | Description |
+|------------|-------------|
 | `api-key` | API Key |
-| `api-sign` | HMAC-SHA256签名 |
-| `api-expire-time` | 请求过期时间（毫秒级UNIX时间戳） |
+| `api-sign` | HMAC-SHA256 signature |
+| `api-expire-time` | Request expiration time (milliseconds UNIX timestamp) |
 
-### 签名步骤
+---
 
-1. 计算 `expire_time = Date.now() + 有效期`（建议30秒）
-2. 构造原始字符串：
-   - GET请求：`expire_time + queryStr`
-   - POST请求：`expire_time + bodyStr`
-3. 使用 `HMAC-SHA256(secret, 原始字符串)` 计算签名
-4. 将签名输出为hex字符串，作为 `api-sign`
+## Signature Steps
 
-### API Key权限
+1. **Calculate Expiration Time**
+```javascript
+const expireTime = Date.now() + 30000; // Current time + 30 seconds
+```
+**Recommendation**: Set expiration to 30 seconds to avoid network delays causing signature expiration.
 
-| 权限 | 说明 |
-|------|------|
-| View | 仅可查询私有数据 |
-| Trade | 可下单、撤单、划转等交易操作 |
+2. **Construct Raw String**
+Depending on HTTP method:
 
-## 公共行情接口
+**For GET requests:**
+```javascript
+const queryStr = 'symbol=BTC_USDT&limit=100';
+const message = expireTime + queryStr;
+```
 
-### 1. 测试连通性
+**For POST requests:**
+```javascript
+const bodyStr = JSON.stringify({ 
+  symbol: 'BTC_USDT', 
+  side: 'buy', 
+  amount: '0.1', 
+  price: '50000'
+});
+const message = expireTime + bodyStr;
+```
+
+3. **Calculate Signature**
+```javascript
+const crypto = require('crypto');
+const signature = crypto
+  .createHmac('sha256', apiSecret)
+  .update(message)
+  .digest('hex');
+```
+
+4. **Set HTTP Headers**
+```javascript
+const headers = {
+  'api-key': apiKey,
+  'api-sign': signature,
+  'api-expire-time': String(expireTime),
+  'Content-Type': 'application/json'
+};
+```
+
+---
+
+## API Key Permissions
+
+| Permission | Description |
+|-----------|-------------|
+| View | Query private data (accounts, orders, positions, fills) |
+| Trade | Execute trades, cancel orders, transfers |
+
+**Configuration**: Set appropriate permissions in exchange backend based on usage needs.
+
+---
+
+## Public Market APIs
+
+No API key required for these endpoints.
+
+### 1. Connectivity Test
 
 ```
 GET /v1/ping
 ```
 
-响应：`pong`
+**Response:**
+```json
+{
+  "pong": "pong"
+}
+```
 
-### 2. 获取服务器时间
+---
+
+### 2. Server Time
 
 ```
 GET /v1/time
 ```
 
-响应：
+**Response:**
 ```json
 {
   "server_time": 1677648000000
 }
 ```
 
-### 3. 获取币种列表
+---
+
+### 3. Get Coin List
 
 ```
 GET /v1/coins
 ```
 
-响应：
+**Query Parameters:**
+- `market` (optional): Market type, e.g., `spot` (default), `lpc`
+
+**Response:**
 ```json
-[
-  {
-    "currency": "BTC",
-    "chains": [
-      {
-        "chain": "BTC",
-        "protocol": "OMNI",
-        "contract_address": "",
-        "min_deposit": "0.001"
-      }
-    ]
-  }
-]
+{
+  "result": [
+    {
+      "currency": "BTC",
+      "chains": [
+        {
+          "chain": "BTC",
+          "protocol": "OMNI",
+          "contract_address": ""
+        }
+      ]
+    }
+  ]
+}
 ```
 
-### 4. 获取交易对列表
+---
+
+### 4. Get Trading Pairs
 
 ```
 GET /v1/products
 ```
 
-查询参数：
-- `market` (可选): 市场类型，如 `spot`
-- `symbol` (可选): 交易对symbol
+**Query Parameters:**
+- `market` (optional): Market type, e.g., `spot` (default), `lpc`
+- `symbol` (optional): Trading pair symbol, e.g., `BTC_USDT`
 
-响应：
+**Response:**
 ```json
-[
-  {
-    "symbol": "BTC_USDT",
-    "base_currency": "BTC",
-    "quote_currency": "USDT",
-    "min_base_amount": "0.001",
-    "min_quote_amount": "10",
-    "price_scale": 2,
-    "amount_scale": 8,
-    "amount_precision": 8,
-    "price_precision": 2
-  }
-]
+{
+  "result": [
+    {
+      "symbol": "BTC_USDT",
+      "base_currency": "BTC",
+      "quote_currency": "USDT",
+      "min_base_amount": "0.001",
+      "min_quote_amount": "10",
+      "price_scale": 2,
+      "amount_scale": 8,
+      "amount_precision": 8,
+      "price_precision": 2,
+      "taker_fee": "0.002",
+      "maker_fee": "0.001",
+      "market": "spot"
+    }
+  ]
+}
 ```
 
-### 5. 获取深度数据
+---
+
+### 5. Get Order Book
 
 ```
 GET /v1/order_book
 ```
 
-查询参数：
-- `symbol` (必需): 交易对symbol
-- `level` (可选): 档位深度，默认20
-- `price_scale` (可选): 价格精度，默认2
+**Query Parameters:**
+- `symbol` (required): Trading pair symbol, e.g., `BTC_USDT`
+- `level` (optional): Depth levels, default 20
+- `price_scale` (optional): Price precision, default 2
 
-响应：
+**Response:**
 ```json
 {
-  "symbol": "BTC_USDT",
-  "bids": [
-    ["50000.00", "0.1"],
-    ["49999.00", "0.5"]
-  ],
-  "asks": [
-    ["50001.00", "0.2"],
-    ["50002.00", "0.3"]
-  ],
-  "timestamp": 1677648000000
+  "result": {
+    "bids": [
+      ["50000.00", "0.5"]
+    ],
+    "asks": [
+      ["50001.00", "0.3"]
+    ],
+    "timestamp": 1677648000000
+  }
 }
 ```
 
-### 6. 获取K线数据
+**Format:** `[price, quantity]` arrays for bids and asks.
+
+---
+
+### 6. Get K-Line (Candlestick) Data
 
 ```
 GET /v1/candles
 ```
 
-查询参数：
-- `symbol` (必需): 交易对symbol
-- `time_frame` (必需): K线周期，如 `1m`, `5m`, `15m`, `1h`, `4h`, `1d`
-- `limit` (可选): 返回数量，默认100，最大1000
-- `before` (可选): 查询指定时间之前的K线（毫秒时间戳）
-- `after` (可选): 查询指定时间之后的K线（毫秒时间戳）
+**Query Parameters:**
+- `symbol` (required): Trading pair symbol, e.g., `BTC_USDT`
+- `time_frame` (required): Time frame, options: `1m`, `5m`, `15m`, `1h`, `4h`, `1d`, `1w`, `1M`
+- `limit` (optional): Number of candles, default 100, max 1000
+- `before` (optional): Get candles before this timestamp (milliseconds)
+- `after` (optional): Get candles after this timestamp (milliseconds)
 
-响应：
+**Response:**
 ```json
-[
-  [1677648000000, "50000.00", "50100.00", "49900.00", "50050.00", "100"],
-  [1677648060000, "50050.00", "50150.00", "50000.00", "50100.00", "150"]
-]
+{
+  "result": {
+    "t": 3600000,
+    "e": [
+      [1677648000000, "50000.00", "51000.00", "50500.00", "24.43", 50100.00"]
+    ]
+  }
+}
 ```
 
-数组格式：`[时间戳, 开盘价, 最高价, 最低价, 收盘价, 成交量]`
+**Candle Format:** `[timestamp, open, high, low, close, volume, ...]`
 
-### 7. 获取成交记录
+---
+
+### 7. Get Trade History
 
 ```
 GET /v1/trades
 ```
 
-查询参数：
-- `symbol` (必需): 交易对symbol
-- `limit` (可选): 返回数量，默认100，最大500
-- `before` (可选): 查询指定时间之前的成交
-- `after` (可选): 查询指定时间之后的成交
+**Query Parameters:**
+- `symbol` (required): Trading pair symbol, e.g., `BTC_USDT`
+- `limit` (optional): Number of trades, default 100, max 500
+- `before` (optional): Get trades before this timestamp (milliseconds)
+- `after` (optional): Get trades after this timestamp (milliseconds)
 
-响应：
+**Response:**
 ```json
-[
-  {
-    "id": 123456789,
-    "create_time": 1677648000000,
-    "price": "50000.00",
-    "amount": "0.1",
-    "side": "buy"
-  }
-]
+{
+  "result": [
+    {
+      "id": 123456789,
+      "create_time": 1677648000000,
+      "price": "50000.00",
+      "amount": "0.1",
+      "side": "buy",
+      "fee": "5.0"
+    }
+  ]
+}
 ```
 
-### 8. 获取24小时行情
+---
+
+### 8. Get 24h Ticker
 
 ```
 GET /v1/ticker
 ```
 
-查询参数：
-- `symbol` (可选): 交易对symbol，不传则返回所有
+**Query Parameters:**
+- `symbol` (required): Trading pair symbol, e.g., `BTC_USDT`
+- `market` (optional): Market type, e.g., `spot` (default), `lpc`
 
-响应（单个交易对）：
+**Response (Single Pair):**
 ```json
 {
-  "symbol": "BTC_USDT",
-  "last_price": "50000.00",
-  "low_24h": "49000.00",
-  "high_24h": "51000.00",
-  "change_24h": "1000.00",
-  "change_percentage_24h": "2.04",
-  "volume_24h": "1000.5",
-  "quote_volume_24h": "50000000.00"
+  "result": [
+    {
+      "last": "50000.00",
+      "low_24h": "49000.00",
+      "high_24h": "51000.00",
+      "change_24h": "1000.00",
+      "change_percentage_24h": "2.04",
+      "volume_24h": "1000.5",
+      "quote_volume_24h": "50000000.00",
+      "base_currency": "BTC",
+      "quote_currency": "USDT",
+      "amount_precision": 8,
+      "price_precision": 2,
+      "product": "BTC_USDT",
+      "time": "1677648000000"
+    }
+  ]
 }
 ```
 
-## 用户数据接口（需要签名）
+---
 
-### 1. 获取交易账户资产
+## User Data APIs (Authentication Required)
 
-```
-GET /v1/trade/accounts
-```
-
-响应：
-```json
-[
-  {
-    "currency": "BTC",
-    "available": "1.5",
-    "frozen": "0.5",
-    "total": "2.0"
-  },
-  {
-    "currency": "USDT",
-    "available": "10000.00",
-    "frozen": "5000.00",
-    "total": "15000.00"
-  }
-]
-```
-
-### 2. 获取钱包资产
+### 9. Get Account Assets
 
 ```
-GET /v1/main/accounts
+GET /papi/v1/trade/accounts
 ```
 
-响应格式同上。
+**Query Parameters:** None
 
-### 3. 获取充值地址
-
-```
-GET /v1/depositAddr
-```
-
-查询参数：
-- `coin` (必需): 币种
-
-响应：
+**Response:**
 ```json
 {
   "currency": "BTC",
-  "address": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-  "chain": "BTC",
-  "tag": ""
+  "available": "1.5",
+  "frozen": "0.5",
+  "total": "2.0"
 }
 ```
 
-### 4. 获取账单流水
+---
+
+### 10. Get All Accounts
 
 ```
-GET /v1/ledgers
+GET /papi/v1/accounts
 ```
 
-查询参数：
-- `currency` (可选): 币种
-- `limit` (可选): 返回数量
-- `before` (可选): 查询指定时间之前的记录
-- `after` (可选): 查询指定时间之后的记录
+**Query Parameters:** None
 
-响应：
+**Response:**
 ```json
-[
-  {
-    "id": 123456,
-    "currency": "BTC",
-    "type": "deposit",
-    "amount": "1.0",
-    "balance": "10.0",
-    "create_time": 1677648000000
-  }
-]
+{
+  "result": [
+    {
+      "currency": "BTC",
+      "available": "1.5",
+      "frozen": "0.5",
+      "total": "2.0"
+    },
+    {
+      "currency": "USDT",
+      "available": "10000.00",
+      "frozen": "5000.00",
+      "total": "15000.00"
+    }
+  ]
+}
 ```
 
-### 5. 创建委托
+---
+
+### 11. Create Order
 
 ```
-POST /v1/order
+POST /papi/v1/order
 ```
 
-请求参数：
+**Request Body:**
 ```json
 {
   "symbol": "BTC_USDT",
@@ -329,15 +406,15 @@ POST /v1/order
 }
 ```
 
-参数说明：
-- `symbol` (必需): 交易对symbol
-- `side` (必需): `buy` 或 `sell`
-- `type` (必需): `limit` 或 `market`
-- `amount` (必需): 数量
-- `price` (必需): 价格（限价单必需）
-- `time_in_force` (可选): `GTC`, `IOC`, `FOK`，默认`GTC`
+**Parameters:**
+- `symbol` (required): Trading pair symbol
+- `side` (required): `buy` or `sell`
+- `type` (required): `limit` or `market`
+- `amount` (required): Order quantity
+- `price` (required): Order price (required for limit orders)
+- `time_in_force` (optional): Time in force, options: `GTC`, `IOC`, `FOK`, default `GTC`
 
-响应：
+**Response:**
 ```json
 {
   "id": 123456789,
@@ -352,353 +429,647 @@ POST /v1/order
 }
 ```
 
-### 6. 查询指定委托
+---
+
+### 12. Query Orders
 
 ```
-GET /v1/order?id=123456789
+GET /papi/v1/orders
 ```
 
-查询参数：
-- `id` (必需): 订单ID
+**Query Parameters:**
+- `symbol` (optional): Trading pair symbol
+- `status` (optional): Order status, e.g., `open`, `filled`, `cancelled`
+- `limit` (optional): Number of orders
 
-响应格式同创建委托响应。
-
-### 7. 查询历史委托
-
-```
-GET /v1/history/orders
-```
-
-查询参数：
-- `symbol` (可选): 交易对
-- `status` (可选): 订单状态
-- `limit` (可选): 返回数量
-- `before` (可选): 查询指定时间之前
-- `after` (可选): 查询指定时间之后
-
-响应：
-```json
-[
-  {
-    "id": 123456789,
-    "symbol": "BTC_USDT",
-    "side": "buy",
-    "type": "limit",
-    "amount": "0.1",
-    "price": "50000.00",
-    "filled_amount": "0.1",
-    "status": "filled",
-    "create_time": 1677648000000
-  }
-]
-```
-
-### 8. 查询当前未成交委托
-
-```
-GET /v1/pending/orders
-```
-
-查询参数：
-- `symbol` (可选): 交易对
-
-响应格式同查询历史委托。
-
-### 9. 撤销委托
-
-```
-POST /v1/order/delete
-```
-
-请求参数：
+**Response:**
 ```json
 {
-  "id": 123456789
+  "result": [
+    {
+      "id": 123456789,
+      "symbol": "Related to BTC_USDT",
+      "side": "buy",
+      "type": "limit",
+      "amount": "0.1",
+      "price": "50000.00",
+      "status": "open",
+      "create_time": 1677648000000
+    }
+  ]
 }
 ```
 
-响应：
+---
+
+### 13. Query Order Details
+
+```
+GET /papi/v1/orders/{id}
+```
+
+**Query Parameters:**
+- `id` (required): Order ID
+
+**Response:**
 ```json
 {
   "id": 123456789,
-  "status": "cancelled"
-}
-```
-
-### 10. 批量撤销委托
-
-```
-POST /v1/orders/delete
-```
-
-请求参数：
-```json
-{
-  "ids": [123456789, 123456790, 123456791]
-}
-```
-
-或撤销指定交易对的所有订单：
-```json
-{
-  "symbol": "BTC_USDT"
-}
-```
-
-响应：
-```json
-{
-  "cancelled_ids": [123456789, 123456790],
-  "failed_ids": []
-}
-```
-
-### 11. 获取仓位信息
-
-```
-GET /v1/positions
-```
-
-响应：
-```json
-[
-  {
-    "symbol": "BTC_USDT",
-    "side": "long",
-    "size": "1.5",
-    "entry_price": "50000.00",
-    "mark_price": "50100.00",
-    "unrealized_pnl": "150.00",
-    "leverage": "10"
-  }
-]
-```
-
-### 12. 获取成交明细
-
-```
-GET /v1/fills
-```
-
-查询参数：
-- `symbol` (可选): 交易对
-- `order_id` (可选): 订单ID
-- `limit` (可选): 返回数量
-- `before` (可选): 查询指定时间之前
-- `after` (可选): 查询指定时间之后
-
-响应：
-```json
-[
-  {
-    "id": 123456,
-    "order_id": 123456789,
-    "symbol": "BTC_USDT",
-    "side": "buy",
-    "price": "50000.00",
-    "amount": "0.1",
-    "fee": "5.0",
-    "fee_currency": "USDT",
-    "create_time": 1677648000000
-  }
-]
-```
-
-### 13. 资产划转
-
-```
-POST /v1/transfer
-```
-
-请求参数：
-```json
-{
-  "coin": "USDT",
-  "amount": "1000",
-  "direction": "main_to_trade"
-}
-```
-
-参数说明：
-- `coin` (必需): 币种
-- `amount` (必需): 数量
-- `direction` (必需): `main_to_trade`（钱包到交易账户）或 `trade_to_main`（交易账户到钱包）
-
-### 14. 子账户资产划转
-
-```
-POST /v1/subaccount/transfer
-```
-
-请求参数：
-```json
-{
-  "uid": "123456",
-  "coin": "USDT",
-  "amount": "1000",
-  "direction": "in"
-}
-```
-
-### 15. 提现
-
-```
-POST /v1/withdraw
-```
-
-请求参数：
-```json
-{
-  "coin": "BTC",
-  "address": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-  "chain": "BTC",
+  "symbol": "BTC_USDT",
+  "side": "buy",
+  "type": "limit",
   "amount": "0.1",
-  "tag": ""
+  "price": "50000.00",
+  "status": "filled",
+  "filled_amount": "0.1",
+  "create_time": 1677648000000,
+  "filled_time": 1677649000000
 }
 ```
 
-## WebSocket接口
+---
 
-### 行情WebSocket
+### 14. Cancel Order
 
-连接地址：`wss://m-stream.ktx.com`
+```
+DELETE /papi/v1/orders/{id}
+```
 
-#### 订阅消息
+**Response:**
+```json
+{
+  "cancelled_ids": [123456789]
+}
+```
+
+---
+
+### 15. Cancel All Orders
+
+```
+DELETE /papi/v1/orders
+```
+
+**Query Parameters:**
+- `symbol` (optional): Trading pair symbol
+
+**Response:**
+```json
+{
+  "cancelled_ids": [123456789, 123456790]
+}
+```
+
+---
+
+### 16. Get Fill History
+
+```
+GET /papi/v1/fills
+```
+
+**Query Parameters:**
+- `symbol` (optional): Trading pair symbol
+- `limit` (optional): Number of fills, default 100
+- `before` (optional): Get fills before timestamp
+- `after` (optional): Get fills after timestamp
+
+**Response:**
+```json
+{
+  "result": [
+    {
+      "id": 123456,
+      "order_id": 123456789,
+      "symbol": "BTC_USDT",
+      "side": "buy",
+      "type": "limit",
+      "amount": "0.1",
+      "price": "50000.00",
+      "fee": "5.0",
+      "fee_currency": "USDT",
+      "create_time": 1677648000000,
+      "filled_time": 1677649000000
+    }
+  ]
+}
+```
+
+---
+
+## Order Types
+
+| Type | Description |
+|------|-------------|
+| `limit` | Limit order (executed at specified price or better) |
+| `market` | Market order (executed at current market price) |
+
+---
+
+## Order Sides
+
+| Side | Description |
+|------|-------------|
+| `buy` | Buy (long position) |
+| `sell` | Sell (short position) |
+
+---
+
+## Order Status
+
+| Status | Description |
+|--------|-------------|
+| `open` | Waiting to be filled |
+| `filled` | Fully executed |
+| `cancelled` | Cancelled |
+| `partial_filled` | Partially executed |
+
+---
+
+## Time In Force
+
+| Value | Description |
+|-------|-------------|
+| `GTC` | Good Till Cancelled (default) |
+| `IOC` | Immediate Or Cancel |
+| `FOK` | Fill Or Kill |
+| `post_only` | Post Only (no partial fills) |
+
+---
+
+## K-Line Time Frames
+
+| Time Frame | Description |
+|-----------|-------------|
+| `1m` | 1 minute |
+| `5m` | 5 minutes |
+| `15m` | 15 minutes |
+| `1h` | 1 hour |
+| `4h` | 4 hours |
+| `1d` | 1 day |
+| `1w` | 1 week |
+| `1M` | 1 month |
+
+---
+
+## Market Types
+
+| Type | Description | Example Symbol |
+|------|-------------|---------------|
+| `spot` | Spot trading | BTC_USDT, ETH_USDT |
+| `lpc` | USDT-margined perpetual contracts | BTC_USDT_SWAP, ETH_USDT_SWAP |
+
+---
+
+## WebSocket APIs
+
+### Market WebSocket
+
+**Connection URL:** `wss://m-stream.ktx.app`
+
+#### Subscribe to Order Book
 
 ```json
 {
   "id": 1,
   "method": "SUBSCRIBE",
-  "params": ["spot.BTC_USDT.order_book.20"]
+  "params": [
+    "spot.BTC_USDT.order_book.20"
+  ]
 }
 ```
 
-#### 取消订阅
+**Stream Format:** `spot.{symbol}.order_book.{depth}`
+
+#### Subscribe to Trades
 
 ```json
 {
   "id": 2,
+  "method": "SUBSCRIBE",
+  "params": [
+    "spot.BTC_USDT.trades"
+  ]
+}
+```
+
+**Stream Format:** `spot.{symbol}.trades`
+
+#### Subscribe to Candles
+
+```json
+{
+  "id": 3,
+  "method": "SUBSCRIBE",
+  "params": [
+    "spot.BTC_USDT.candles.1h"
+  ]
+}
+```
+
+**Stream Format:** `spot.{symbol}.candles.{time_frame}`
+
+#### Subscribe to 24h Ticker
+
+```json
+{
+  "id": 4,
+  "method": "SUBSCRIBE",
+  "params": [
+    "spot.BTC_USDT.ticker"
+  ]
+}
+```
+
+**Stream Format:** `spot.{symbol}.ticker`
+
+#### Unsubscribe
+
+```json
+{
+  "id": 5,
   "method": "UNSUBSCRIBE",
-  "params": ["spot.BTC_USDT.order_book.20"]
+  "params": [
+    "spot.BTC_USDT.order_book.20",
+    "spot.BTC_USDT.trades",
+    "spot.BTC_USDT.candles.1h",
+    "spot.BTC_USDT.ticker"
+  ]
 }
 ```
 
-#### 支持的流类型
+---
 
-| 流类型 | 格式 | 说明 |
-|--------|------|------|
-| 深度数据 | `spot.{symbol}.order_book.{depth}` | 深度数据，depth为档位 |
-| 成交记录 | `spot.{symbol}.trades` | 成交记录 |
-| K线数据 | `spot.{symbol}.candles.{time_frame}` | K线数据 |
-| 24小时行情 | `spot.{symbol}.ticker` | 24小时行情 |
+### User Data WebSocket
 
-### 用户数据WebSocket
+**Connection URL:** `wss://u-stream.ktx.app`
 
-连接地址：`wss://u-stream.ktx.com`
-
-#### 登录
-
-```json
-{
-  "method": "LOGIN",
-  "auth": {
-    "api-key": "your_api_key",
-    "api-sign": "your_signature"
-  }
-}
-```
-
-#### 心跳
-
-```json
-{
-  "ping": 1677648000000
-}
-```
-
-#### 订阅流
+#### Login
 
 ```json
 {
   "id": 1,
-  "method": "SUBSCRIBE",
-  "params": ["account"]
+  "method": "LOGIN",
+  "auth": {
+    "api-key": "your_api_key",
+    "api-sign": "your_signature",
+    "api-expire-time": "1677648100000"
+  }
 }
 ```
 
-#### 支持的流类型
+#### Subscribe to Account
 
-| 流类型 | 说明 |
-|--------|------|
-| `account` | 账户余额变更 |
-| `order` | 委托状态、成交变更 |
-| `position` | 仓位变更 |
+```json
+{
+  "id": 2,
+  "method": "SUBSCRIBE",
+  "params": [
+    "account"
+  ]
+}
+```
 
-## 错误码
+**Stream Format:** `account` - All account changes
 
-| 错误码 | 说明 |
-|--------|------|
-| -10000 | 网络错误 |
-| -10001 | 未实现 |
-| -10002 | 无权限 |
-| -10003 | 未知错误 |
-| -12001 | 缺少必需参数 |
-| -12002 | 参数格式错误 |
-| -12003 | 签名错误 |
-| -12101 | API Key不存在 |
-| -12102 | API Key已过期 |
-| -12103 | 请求过期 |
-| -20001 | 余额不足 |
-| -20002 | 下单失败 |
-| -20006 | CPU限制超限 |
-| -20007 | 请求频率超限 |
-| -21001 | 订单不存在 |
-| -21002 | 订单已完成 |
-| -21401 | 币种不支持 |
+#### Subscribe to Orders
 
-## 订单类型
+```json
+{
+  "id": 3,
+  "method": "SUBSCRIBE",
+  "params": [
+    "order"
+  ]
+}
+```
 
-### 订单类型
+**Stream Format:** `order` - All order changes
 
-| 类型 | 说明 |
-|------|------|
-| `limit` | 限价单 |
-| `market` | 市价单 |
+#### Subscribe to Positions
 
-### 订单方向
+```json
+{
+  "id": 4,
+  "method": "SUBSCRIBE",
+  "params": [
+    "position"
+  ]
+}
+```
 
-| 方向 | 说明 |
-|------|------|
-| `buy` | 买入 |
-| `sell` | 卖出 |
+**Stream Format:** `position` - All position changes
 
-### 订单状态
+#### Unsubscribe
 
-| 状态 | 说明 |
-|------|------|
-| `open` | 未成交 |
-| `filled` | 已成交 |
-| `cancelled` | 已撤销 |
-| `partial_filled` | 部分成交 |
-| `rejected` | 已拒绝 |
+```json
+{
+  "id": 5,
+  "method": "UNSUBSCRIBE",
+  "params": [
+    "account",
+    "order",
+    "position"
+  ]
+}
+```
 
-### 时间有效期
+#### Heartbeat
 
-| 类型 | 说明 |
-|------|------|
-| `GTC` | 撤销前有效（默认）|
-| `IOC` | 立即成交或取消 |
-| `FOK` | 全部成交或取消 |
+```json
+{
+  "id": 6,
+  "method": "PING"
+}
+```
 
-## K线周期
+**Response:**
+```json
+{
+  "pong": 1677648100000
+}
+```
 
-| 周期 | 说明 |
-|------|------|
-| `1m` | 1分钟 |
-| `5m` | 5分钟 |
-| `15m` | 15分钟 |
-| `1h` | 1小时 |
-| `4h` | 4小时 |
-| `1d` | 1天 |
-| `1w` | 1周 |
-| `1M` | 1月 |
+---
+
+## Error Codes
+
+| Error Code | Description |
+|-----------|-------------|
+| `-10000` | Network error |
+| `-10001` | Not implemented |
+| `-10002` | Not implemented |
+| `-10003` | Unknown error |
+| `-12001` | Missing required parameter |
+| `-12002` | Invalid parameter format |
+| `-12003` | Parameter value out of range |
+| `-20001` | Insufficient balance |
+| `-20002` | Order failed |
+| `-20006` | CPU limit exceeded |
+| `-20007` | Rate limit exceeded |
+| `-21001` | Order not found |
+| `-21002` | Order already completed |
+| `-21401` | Coin not supported |
+| `-21402` | Chain not supported |
+
+---
+
+## Example Usage
+
+### JavaScript (Node.js)
+
+**Get Market Data:**
+```javascript
+const crypto = require('crypto');
+const https = require('https');
+
+function signRequest(apiSecret, expireTime, message) {
+  const hmac = crypto.createHmac('sha256', apiSecret);
+  hmac.update(message);
+  return hmac.digest('hex');
+}
+
+// Get ticker
+const apiKey = 'your_api_key';
+const apiSecret = 'your_api_secret';
+const symbol = 'BTC_USDT';
+const expireTime = Date.now() + 30000;
+
+const options = {
+  hostname: 'api.ktx.app',
+  port: 443,
+  path: `/api/v1/ticker?symbol=${symbol}&market=spot`,
+  method: 'GET',
+  headers: {
+    'api-key': apiKey,
+    'api-sign': signRequest(apiSecret, expireTime, ''),
+    'api-expire-time': String(expireTime),
+    'Content-Type': 'application/json'
+  }
+};
+
+https.request(options, (res) => {
+  let data = '';
+  res.on('data', chunk => data += chunk);
+  res.on('end', () => {
+    const result = JSON.parse(data);
+    console.log('Ticker:', result);
+  });
+}).on('error', console.error);
+```
+
+**Create Order:**
+```javascript
+const orderData = {
+  symbol: 'BTC_USDT',
+  side: 'buy',
+  type: 'limit',
+  amount: '0.1',
+  price: '50000'
+};
+
+const bodyStr = JSON.stringify(orderData);
+const message = expireTime + bodyStr;
+const signature = signRequest(apiSecret, expireTime, bodyStr);
+
+const options = {
+  hostname: 'api.ktx.app',
+  port: 443,
+  path: '/papi/v1/order',
+  method: 'POST',
+  headers: {
+    'api-key': apiKey,
+    'api-sign': signature,
+    'api-expire-time': String(expireTime),
+    'Content-Type': 'application/json'
+  },
+  body: bodyStr
+};
+
+https.request(options, (res) => {
+  let data = '';
+  res.on('data', chunk => data += chunk);
+  res.on('end', () => {
+    const result = JSON.parse(data);
+    console.log('Order created:', result);
+  });
+}).on('error', console.error);
+```
+
+---
+
+## Python
+
+**Get Ticker:**
+```python
+import hmac
+import time
+import requests
+import hashlib
+
+api_key = 'your_api_key'
+api_secret = 'your_api_secret'
+symbol = 'BTC_USDT'
+expire_time = int(time.time() * 1000) + 30000
+message = f'{expire_time}'
+signature = hmac.new(
+    api_secret.encode('utf-8'),
+    message.encode('utf-8'),
+    hashlib.sha256
+).hexdigest()
+
+headers = {
+    'api-key': api_key,
+    'api-sign': signature,
+    'api-expire-time': str(expire_time),
+    'Content-Type': 'application/json'
+}
+
+response = requests.get(
+    f'https://api.ktx.app/api/v1/ticker?symbol={symbol}&market=spot',
+    headers=headers
+)
+
+print(response.json())
+```
+
+---
+
+## Go
+
+**Get Ticker:**
+```go
+package main
+
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func signRequest(secret string, expireTime int64, data string) string {
+    h := hmac.New(sha256.New, []byte(secret))
+    h.Write([]byte(data))
+    return hex.EncodeToString(h.Sum(nil))
+}
+
+func getTicker() {
+    apiKey := "your_api_key"
+    apiSecret := "your_api_secret"
+    symbol := "BTC_USDT"
+    expireTime := time.Now().Add(30 * time.Second).UnixMilli()
+    message := fmt.Sprintf("%d", expireTime)
+    signature := signRequest(apiSecret, expireTime, message)
+
+    url := fmt.Sprintf("https://api.ktx.app/api/v1/ticker?symbol=%s&market=spot", symbol)
+
+    req, _ := http.NewRequest("GET", url, nil)
+    req.Header.Set("api-key", apiKey)
+    req.Header.Set("api-sign", signature)
+    req.Header.Set("api-expire-time", strconv.FormatInt(expireTime, 10))
+    req.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        fmt.Println("Error:", err)
+        return
+    }
+    defer resp.Body.Close()
+
+    body, _ := io.ReadAll(resp.Body)
+    var result map[string]interface{}
+    json.Unmarshal(body, &result)
+
+    fmt.Println("Ticker:", result)
+}
+
+func main() {
+    getTicker()
+}
+```
+
+---
+
+## Troubleshooting
+
+### 1. Signature Errors (-12001, -12002)
+
+**Possible Causes:**
+- API Key or API Secret is incorrect
+- Original string construction error
+- Timestamp format incorrect
+
+**Solutions:**
+1. Verify API Key and API Secret in exchange backend
+2. Check if using correct signature algorithm (HMAC-SHA256)
+3. Ensure timestamp is in milliseconds
+4. Use official example code for comparison
+
+### 2. Connection Issues
+
+**Checks:**
+1. Verify network connectivity to `api.ktx.app`
+2. Check firewall settings
+3. Verify SSL/TLS configuration
+
+### 3. Rate Limiting (-20006, -20007)
+
+**Solutions:**
+1. Reduce request frequency
+2. Implement exponential backoff for retries
+3. Use WebSocket for real-time data instead of polling
+4. Batch queries when possible
+
+### 4. Balance Issues (-20001)
+
+**Checks:**
+1. Verify account has sufficient balance
+2. Check order amount is within account total
+3. Ensure correct currency is being used
+
+---
+
+## Security Considerations
+
+1. **API Key Security**
+   - Never hardcode API keys in your code
+   - Store API keys in environment variables or configuration files
+   - Never commit API keys to version control
+   - Rotate API keys periodically
+   - Use different API keys for different environments
+
+2. **Permission Control**
+   - Use `View` permission for query-only operations
+   - Use `Trade` permission only for trading operations
+   - Create separate API keys for different purposes
+
+3. **Signature Security**
+   - Set reasonable expiration time (30-60 seconds recommended)
+   - Synchronize system time with NTP for accurate timestamps
+   - Use HTTPS for all API calls
+   - Verify signature before sending requests
+
+4. **Risk Management**
+   - Test with small amounts first
+   - Set stop-loss limits when possible
+   - Use limit orders instead of market orders
+   - Never risk more than you can afford to lose
+
+---
+
+## Support
+
+- **Full Installation Guide:** [QUICK_INSTALL.md](./QUICK_INSTALL.md)
+- **Chinese Installation Guide:** [QUICK_INSTALL_zh.md](./QUICK_INSTALL_zh.md)
+- **Skills Overview:** [SKILLS_OVERVIEW.md](./SKILLS_OVERVIEW.md)
+- **Usage Examples:** [scripts/examples/](./scripts/examples/)
+
+---
+
+**Version:** v2026.3.23.1  
+**Last Updated:** 2026-03-23

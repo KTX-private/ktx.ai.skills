@@ -1,166 +1,249 @@
-# API签名规范
+# KTX API Signature Specification
 
-## 签名算法
+This document describes the signature algorithm used for KTX API authentication and provides implementation examples in various programming languages.
 
-KTX API使用HMAC-SHA256签名算法来验证请求的合法性和完整性。
+## Table of Contents
 
-## 签名步骤
+- [Overview](#overview)
+- [Authentication Process](#authentication-process)
+- [Signature Algorithm](#signature-algorithm)
+- [Implementation Examples](#implementation-examples)
+- [WebSocket Authentication](#websocket-authentication)
+- [Common Errors](#common-errors)
+- [Security Best Practices](#security-best-practices)
 
-### 1. 准备签名数据
+## Overview
 
-**请求过期时间（expire_time）**
+KTX API uses HMAC-SHA256 signature to verify API request legitimacy. Each API request must include the following authentication parameters:
 
-```javascript
-const expireTime = Date.now() + 30000; // 当前时间 + 30秒
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `APIKEY` | String | Yes | Your API Key |
+| `TIMESTAMP` | String | Yes | Current timestamp in milliseconds |
+| `SIGNATURE` | String | Yes | HMAC-SHA256 signature of the request |
+
+## Authentication Process
+
+1. **Obtain API Key**: Log in to KTX platform, go to API Management, and create API Key
+2. **Construct Request**: Assemble request parameters in the specified format
+3. **Generate Signature**: Calculate HMAC-SHA256 signature using the API Secret
+4. **Send Request**: Include authentication headers in the API request
+5. **Verify Response**: Process the API response data
+
+## Signature Algorithm
+
+The signature is generated using the following steps:
+
+### Step 1: Construct the Signature String
+
+For **GET** requests:
+```
+timestamp + method + requestPath + queryString
 ```
 
-建议设置30秒有效期，避免因网络延迟导致签名过期。
-
-**原始字符串构造**
-
-根据HTTP方法构造原始字符串：
-
-- **GET请求**：`expire_time + queryStr`
-- **POST请求**：`expire_time + bodyStr`
-
-示例：
-```javascript
-// GET请求
-const queryStr = 'symbol=BTC_USDT&limit=100';
-const message = expireTime + queryStr;
-
-// POST请求
-const bodyStr = JSON.stringify({ symbol: 'BTC_USDT', side: 'buy', amount: '0.1' });
-const message = expireTime + bodyStr;
+For **POST** requests:
+```
+timestamp + method + requestPath + body
 ```
 
-### 2. 计算签名
+**Parameters:**
+- `timestamp`: Current timestamp in milliseconds
+- `method`: HTTP method (GET, POST, etc.), in uppercase
+- `requestPath`: Request path, e.g., `/api/v1/order`
+- `queryString`: URL-encoded query string (for GET requests)
+- `body`: JSON string of the request body (for POST requests)
 
-使用HMAC-SHA256算法，以API Secret为密钥，对原始字符串进行签名：
+### Step 2: Generate HMAC-SHA256 Signature
+
+Use your API Secret as the key to sign the constructed signature string:
 
 ```javascript
 const crypto = require('crypto');
-const signature = crypto
-  .createHmac('sha256', apiSecret)
-  .update(message)
+const signature = crypto.createHmac('sha256', apiSecret)
+  .update(signatureString)
   .digest('hex');
 ```
 
-### 3. 设置HTTP头
+### Step 3: Add Authentication Headers
 
-将签名信息添加到HTTP请求头中：
+Add the following headers to your HTTP request:
 
-```javascript
-const headers = {
-  'api-key': apiKey,
-  'api-sign': signature,
-  'api-expire-time': String(expireTime),
-  'Content-Type': 'application/json'
-};
+```http
+APIKEY: your_api_key
+TIMESTAMP: 1234567890123
+SIGNATURE: generated_signature
 ```
 
-## 完整示例
+## Implementation Examples
 
 ### JavaScript (Node.js)
 
+#### GET Request Example
+
 ```javascript
 const crypto = require('crypto');
-const https = require('https');
+const axios = require('axios');
 
-// API密钥
+// Configuration
 const apiKey = 'your_api_key';
 const apiSecret = 'your_api_secret';
+const baseUrl = 'https://api.ktx.info';
 
-// GET请求示例
-function getAPIRequest(path, params) {
-  const expireTime = Date.now() + 30000;
-  const queryStr = new URLSearchParams(params).toString();
-  const message = expireTime + queryStr;
-  const signature = crypto.createHmac('sha256', apiSecret)
-    .update(message)
+// GET request signature generation
+function generateGetSignature(timestamp, method, requestPath, queryString) {
+  const signatureString = timestamp + method + requestPath + queryString;
+  return crypto.createHmac('sha256', apiSecret)
+    .update(signatureString)
     .digest('hex');
-
-  const options = {
-    hostname: 'api.ktx.com',
-    port: 443,
-    path: `/api${path}?${queryStr}`,
-    method: 'GET',
-    headers: {
-      'api-key': apiKey,
-      'api-sign': signature,
-      'api-expire-time': String(expireTime),
-      'Content-Type': 'application/json'
-    }
-  };
-
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve(JSON.parse(data)));
-    });
-    req.on('error', reject);
-    req.end();
-  });
 }
 
-// POST请求示例
-function postAPIRequest(path, data) {
-  const expireTime = Date.now() + 30000;
-  const bodyStr = JSON.stringify(data);
-  const message = expireTime + bodyStr;
-  const signature = crypto.createHmac('sha256', apiSecret)
-    .update(message)
-    .digest('hex');
+// Example: Query order
+async function getOrder(orderId) {
+  const method = 'GET';
+  const requestPath = '/api/v1/order';
+  const queryString = `orderId=${orderId}`;
 
-  const options = {
-    hostname: 'api.ktx.com',
-    port: 443,
-    path: `/papi${path}`,
-    method: 'POST',
-    headers: {
-      'api-key': apiKey,
-      'api-sign': signature,
-      'api-expire-time': String(expireTime),
-      'Content-Type': 'application/json'
-    }
-  };
+  const timestamp = Date.now().toString();
+  const signature = generateGetSignature(timestamp, method, requestPath, queryString);
 
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve(JSON.parse(data)));
-    });
-    req.on('error', reject);
-    req.write(bodyStr);
-    req.end();
-  });
-}
-
-// 使用示例
-(async () => {
   try {
-    // 查询账户余额
-    const accounts = await getAPIRequest('/v1/trade/accounts', {});
-    console.log(accounts);
-
-    // 创建订单
-    const order = await postAPIRequest('/v1/order', {
-      symbol: 'BTC_USDT',
-      side: 'buy',
-      type: 'limit',
-      amount: '0.1',
-      price: '50000'
+    const response = await axios({
+      method,
+      url: `${baseUrl}${requestPath}?${queryString}`,
+      headers: {
+        'APIKEY': apiKey,
+        'TIMESTAMP': timestamp,
+        'SIGNATURE': signature
+      }
     });
-    console.log(order);
+    return response.data;
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Request failed:', error.response?.data || error.message);
+    throw error;
   }
-})();
+}
+
+// Usage example
+getOrder('123456789')
+  .then(data => console.log('Order data:', data))
+  .catch(err => console.error('Error:', err));
+```
+
+#### POST Request Example
+
+```javascript
+const crypto = require('crypto');
+const axios = require('axios');
+
+// Configuration
+const apiKey = 'your_api_key';
+const apiSecret = 'your_api_secret';
+const baseUrl = 'https://api.ktx.info';
+
+// POST request signature generation
+function generatePostSignature(timestamp, method, requestPath, body) {
+  const signatureString = timestamp + method + requestPath + body;
+  return crypto.createHmac('sha256', apiSecret)
+    .update(signatureString)
+    .digest('hex');
+}
+
+// Example: Place an order
+async function placeOrder(orderData) {
+  const method = 'POST';
+  const requestPath = '/api/v1/order';
+  const body = JSON.stringify(orderData);
+
+  const timestamp = Date.now().toString();
+  const signature = generatePostSignature(timestamp, method, requestPath, body);
+
+  try {
+    const response = await axios({
+      method,
+      url: `${baseUrl}${requestPath}`,
+      data: orderData,
+      headers: {
+        'APIKEY': apiKey,
+        'TIMESTAMP': timestamp,
+        'SIGNATURE': signature,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Order failed:', error.response?.data || error.message);
+    throw error;
+  }
+}
+
+// Usage example
+const orderData = {
+  symbol: 'BTC-USDT',
+  side: 'BUY',
+  type: 'LIMIT',
+  price: '68000.00',
+  quantity: '0.001'
+};
+
+placeOrder(orderData)
+  .then(data => console.log('Order result:', data))
+  .catch(err => console.error('Error:', err));
 ```
 
 ### Python
+
+#### GET Request Example
+
+```python
+import hmac
+import hashlib
+import time
+import requests
+import urllib.parse
+from typing import Dict, Any
+
+# Configuration
+API_KEY = 'your_api_key'
+API_SECRET = 'your_api_secret'
+BASE_URL = 'https://api.ktx.info'
+
+def generate_get_signature(timestamp: str, method: str, request_path: str, query_string: str) -> str:
+    """Generate signature for GET request"""
+    signature_string = timestamp + method + request_path + query_string
+    return hmac.new(
+        API_SECRET.encode('utf-8'),
+        signature_string.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+
+def get_order(order_id: str) -> Dict[str, Any]:
+    """Query order"""
+    method = 'GET'
+    request_path = '/api/v1/order'
+    query_string = f"orderId={order_id}"
+
+    timestamp = str(int(time.time() * 1000))
+    signature = generate_get_signature(timestamp, method, request_path, query_string)
+
+    headers = {
+        'APIKEY': API_KEY,
+        'TIMESTAMP': timestamp,
+        'SIGNATURE': signature
+    }
+
+    url = f"{BASE_URL}{request_path}?{query_string}"
+    response = requests.get(url, headers=headers)
+    return response.json()
+
+# Usage example
+try:
+    order_data = get_order('123456789')
+    print("Order data:", order_data)
+except Exception as e:
+    print("Error:", e)
+```
+
+#### POST Request Example
 
 ```python
 import hmac
@@ -168,81 +251,61 @@ import hashlib
 import time
 import requests
 import json
+from typing import Dict, Any
 
-# API密钥
-api_key = 'your_api_key'
-api_secret = 'your_api_secret'
+# Configuration
+API_KEY = 'your_api_key'
+API_SECRET = 'your_api_secret'
+BASE_URL = 'https://api.ktx.info'
 
-# GET请求示例
-def get_api_request(path, params=None):
-    if params is None:
-        params = {}
-
-    expire_time = int(time.time() * 1000) + 30000
-    query_str = '&'.join([f'{k}={v}' for k, v in params.items()])
-    message = str(expire_time) + query_str
-    signature = hmac.new(
-        api_secret.encode('utf-8'),
-        message.encode('utf-8'),
+def generate_post_signature(timestamp: str, method: str, request_path: str, body: str) -> str:
+    """Generate signature for POST request"""
+    signature_string = timestamp + method + request_path + body
+    return hmac.new(
+        API_SECRET.encode('utf-8'),
+        signature_string.encode('utf-8'),
         hashlib.sha256
     ).hexdigest()
 
+def place_order(order_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Place an order"""
+    method = 'POST'
+    request_path = '/api/v1/order'
+    body = json.dumps(order_data, separators=(',', ':'))
+
+    timestamp = str(int(time.time() * 1000))
+    signature = generate_post_signature(timestamp, method, request_path, body)
+
     headers = {
-        'api-key': api_key,
-        'api-sign': signature,
-        'api-expire-time': str(expire_time),
+        'APIKEY': API_KEY,
+        'TIMESTAMP': timestamp,
+        'SIGNATURE': signature,
         'Content-Type': 'application/json'
     }
 
-    response = requests.get(
-        f'https://api.ktx.com/api{path}?{query_str}',
-        headers=headers
-    )
+    url = f"{BASE_URL}{request_path}"
+    response = requests.post(url, json=order_data, headers=headers)
     return response.json()
 
-# POST请求示例
-def post_api_request(path, data):
-    expire_time = int(time.time() * 1000) + 30000
-    body_str = json.dumps(data)
-    message = str(expire_time) + body_str
-    signature = hmac.new(
-        api_secret.encode('utf-8'),
-        message.encode('utf-8'),
-        hashlib.sha256
-    ).hexdigest()
+# Usage example
+order_data = {
+    'symbol': 'BTC-USDT',
+    'side': 'BUY',
+    'type': 'LIMIT',
+    'price': '68000.00',
+    'quantity': '0.001'
+}
 
-    headers = {
-        'api-key': api_key,
-        'api-sign': signature,
-        'api-expire-time': str(expire_time),
-        'Content-Type': 'application/json'
-    }
-
-    response = requests.post(
-        f'https://api.ktx.com/papi{path}',
-        data=body_str,
-        headers=headers
-    )
-    return response.json()
-
-# 使用示例
-if __name__ == '__main__':
-    # 查询账户余额
-    accounts = get_api_request('/v1/trade/accounts')
-    print(accounts)
-
-    # 创建订单
-    order = post_api_request('/v1/order', {
-        'symbol': 'BTC_USDT',
-        'side': 'buy',
-        'type': 'limit',
-        'amount': '0.1',
-        'price': '50000'
-    })
-    print(order)
+try:
+    result = place_order(order_data)
+    print("Order result:", result)
+except Exception as e:
+    print("Error:", e)
 ```
 
 ### Go
+
+#### GET Request Example
 
 ```go
 package main
@@ -255,82 +318,44 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 )
 
+// Configuration
 const (
-	apiKey    = "your_api_key"
-	apiSecret = "your_api_secret"
+	APIKey    = "your_api_key"
+	APISecret = "your_api_secret"
+	BaseURL   = "https://api.ktx.info"
 )
 
-// 计算签名
-func signRequest(secret string, expireTime int64, data string) string {
-	message := fmt.Sprintf("%d%s", expireTime, data)
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(message))
+// Generate GET signature
+func generateGetSignature(timestamp, method, requestPath, queryString string) string {
+	signatureString := timestamp + method + requestPath + queryString
+	h := hmac.New(sha256.New, []byte(APISecret))
+	h.Write([]byte(signatureString))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// GET请求
-func getAPIRequest(path string, params map[string]string) (map[string]interface{}, error) {
-	expireTime := time.Now().Add(30 * time.Second).UnixMilli()
-	queryValues := url.Values{}
-	for k, v := range params {
-		queryValues.Add(k, v)
-	}
-	queryStr := queryValues.Encode()
+// GetOrder query order
+func GetOrder(orderID string) (map[string]interface{}, error) {
+	method := "GET"
+	requestPath := "/api/v1/order"
+	queryString := fmt.Sprintf("orderId=%s", orderID)
 
-	signature := signRequest(apiSecret, expireTime, queryStr)
+	timestamp := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	signature := generateGetSignature(timestamp, method, requestPath, queryString)
 
-	req, err := http.NewRequest("GET", "https://api.ktx.com/api"+path+"?"+queryStr, nil)
+	url := fmt.Sprintf("%s%s?%s", BaseURL, requestPath, queryString)
+
+	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("api-key", apiKey)
-	req.Header.Set("api-sign", signature)
-	req.Header.Set("api-expire-time", strconv.FormatInt(expireTime, 10))
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var result map[string]interface{}
-	err = json.Unmarshal(body, &result)
-	return result, err
-}
-
-// POST请求
-func postAPIRequest(path string, data map[string]interface{}) (map[string]interface{}, error) {
-	expireTime := time.Now().Add(30 * time.Second).UnixMilli()
-	bodyBytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
-	}
-	bodyStr := string(bodyBytes)
-
-	signature := signRequest(apiSecret, expireTime, bodyStr)
-
-	req, err := http.NewRequest("POST", "https://api.ktx.com/papi"+path, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("api-key", apiKey)
-	req.Header.Set("api-sign", signature)
-	req.Header.Set("api-expire-time", strconv.FormatInt(expireTime, 10))
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("APIKEY", APIKey)
+	req.Header.Set("TIMESTAMP", timestamp)
+	req.Header.Set("SIGNATURE", signature)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -350,158 +375,357 @@ func postAPIRequest(path string, data map[string]interface{}) (map[string]interf
 }
 
 func main() {
-	// 查询账户余额
-	accounts, err := getAPIRequest("/v1/trade/accounts", nil)
+	orderData, err := GetOrder("123456789")
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
-	fmt.Println(accounts)
-
-	// 创建订单
-	order, err := postAPIRequest("/v1/order", map[string]interface{}{
-		"symbol": "BTC_USDT",
-		"side":   "buy",
-		"type":   "limit",
-		"amount": "0.1",
-		"price":  "50000",
-	})
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	fmt.Println(order)
+	fmt.Println("Order data:", orderData)
 }
 ```
 
-## WebSocket签名
+#### POST Request Example
 
-用户数据WebSocket也需要签名认证：
+```go
+package main
+
+import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+	"time"
+)
+
+// Configuration
+const (
+	APIKey    = "your_api_key"
+	APISecret = "your_api_secret"
+	BaseURL   = "https://api.ktx.info"
+)
+
+// Generate POST signature
+func generatePostSignature(timestamp, method, requestPath, body string) string {
+	signatureString := timestamp + method + requestPath + body
+	h := hmac.New(sha256.New, []byte(APISecret))
+	h.Write([]byte(signatureString))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// PlaceOrder place an order
+func PlaceOrder(orderData map[string]interface{}) (map[string]interface{}, error) {
+	method := "POST"
+	requestPath := "/api/v1/order"
+
+	bodyBytes, err := json.Marshal(orderData)
+	if err != nil {
+		return nil, err
+	}
+	body := string(bodyBytes)
+
+	timestamp := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	signature := generatePostSignature(timestamp, method, requestPath, body)
+
+	url := fmt.Sprintf("%s%s", BaseURL, requestPath)
+
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("APIKEY", APIKey)
+	req.Header.Set("TIMESTAMP", timestamp)
+	req.Header.Set("SIGNATURE", signature)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result map[string]interface{}
+	err = json.Unmarshal(respBody, &result)
+	return result, err
+}
+
+func main() {
+	orderData := map[string]interface{}{
+		"symbol":   "BTC-USDT",
+		"side":     "BUY",
+		"type":     "LIMIT",
+		"price":    "68000.00",
+		"quantity": "0.001",
+	}
+
+	result, err := PlaceOrder(orderData)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println("Order result:", result)
+}
+```
+
+## WebSocket Authentication
+
+KTX WebSocket also uses HMAC-SHA256 signature for authentication. The authentication process is as follows:
+
+### Authentication Steps
+
+1. **Generate Signature**: Use the same algorithm as HTTP requests
+2. **Send Authentication Message**: Send authentication message after establishing WebSocket connection
+3. **Wait for Response**: Wait for server authentication result
+
+### Authentication Message Format
+
+```json
+{
+  "event": "auth",
+  "params": {
+    "apiKey": "your_api_key",
+    "timestamp": "1234567890123",
+    "signature": "generated_signature"
+  }
+}
+```
+
+### WebSocket Authentication Example (JavaScript)
 
 ```javascript
 const crypto = require('crypto');
 const WebSocket = require('ws');
 
-// 计算WebSocket签名
-function signWSRequest(secret, expireTime, message) {
-  const hmac = crypto.createHmac('sha256', secret);
-  hmac.update(expireTime + message);
-  return hmac.digest('hex');
+// Configuration
+const apiKey = 'your_api_key';
+const apiSecret = 'your_api_secret';
+const wsUrl = 'wss://ws.ktx.info/v1/ws';
+
+// Generate WebSocket signature
+function generateWsSignature(timestamp) {
+  const signatureString = timestamp;
+  return crypto.createHmac('sha256', apiSecret)
+    .update(signatureString)
+    .digest('hex');
 }
 
-// 连接和登录
-const ws = new WebSocket('wss://u-stream.ktx.com');
+// Establish WebSocket connection
+const ws = new WebSocket(wsUrl);
 
 ws.on('open', () => {
-  const expireTime = Date.now() + 30000;
-  const loginMessage = { method: 'LOGIN' };
-  const messageStr = JSON.stringify(loginMessage);
-  const signature = signWSRequest(apiSecret, String(expireTime), messageStr);
+  console.log('WebSocket connection established');
 
-  ws.send(JSON.stringify({
-    method: 'LOGIN',
-    auth: {
-      'api-key': apiKey,
-      'api-sign': signature
+  // Send authentication message
+  const timestamp = Date.now().toString();
+  const signature = generateWsSignature(timestamp);
+
+  const authMessage = {
+    event: 'auth',
+    params: {
+      apiKey: apiKey,
+      timestamp: timestamp,
+      signature: signature
     }
-  }));
+  };
+
+  ws.send(JSON.stringify(authMessage));
+});
+
+ws.on('message', (data) => {
+  const message = JSON.parse(data.toString());
+
+  if (message.event === 'auth') {
+    if (message.code === 0) {
+      console.log('Authentication successful');
+      // Subscribe to required channels
+      ws.send(JSON.stringify({
+        event: 'subscribe',
+        params: {
+          channel: 'order.book',
+          symbol: 'BTC-USDT'
+        }
+      }));
+    } else {
+      console.error('Authentication failed:', message.message);
+      ws.close();
+    }
+  } else {
+    console.log('Received message:', message);
+  }
+});
+
+ws.on('error', (error) => {
+  console.error('WebSocket error:', error);
+});
+
+ws.on('close', () => {
+  console.log('WebSocket connection closed');
 });
 ```
 
-## 常见问题
+## Common Errors
 
-### 1. 签名错误（-12003）
+### 1. Signature Verification Failed
 
-**可能原因：**
-- API Key或API Secret不正确
-- 签名计算错误
-- 原始字符串构造错误
+**Error Message**: `Invalid signature`
 
-**排查步骤：**
-1. 确认API Key和API Secret是否正确复制
-2. 检查原始字符串是否按照规范构造
-3. 使用官方提供的示例代码进行对比
-4. 确认时间戳格式正确（毫秒级）
+**Possible Causes**:
+- Incorrect API Secret
+- Signature string construction error
+- Timestamp discrepancy
+- Parameter encoding issue
 
-### 2. 请求过期（-12103）
+**Solution**:
+1. Confirm API Secret is correct
+2. Check signature string construction order: `timestamp + method + requestPath + queryString/body`
+3. Ensure timestamp uses milliseconds
+4. For POST requests, body must be JSON string without extra spaces
 
-**可能原因：**
-- 本地系统时间不准确
-- 签名过期时间设置过短
-- 网络延迟导致请求超时
+### 2. Timestamp Out of Range
 
-**排查步骤：**
-1. 同步本地系统时间
-2. 将过期时间延长至60秒
-3. 检查网络连接稳定性
+**Error Message**: `Timestamp out of range`
 
-### 3. 权限不足（-10002）
+**Possible Causes**:
+- System time not synchronized
+- Timestamp unit error (should be milliseconds)
 
-**可能原因：**
-- API Key权限不足
-- 请求的接口需要更高权限
+**Solution**:
+1. Check system time synchronization
+2. Confirm timestamp uses milliseconds: `Date.now()` or `time.time() * 1000`
 
-**排查步骤：**
-1. 确认API Key权限设置
-2. View权限只能查询，Trade权限可以交易
-3. 在交易所后台为API Key添加所需权限
+### 3. API Key Invalid
 
-### 4. 参数错误（-12001, -12002）
+**Error Message**: `Invalid API key`
 
-**可能原因：**
-- 缺少必需参数
-- 参数格式不正确
-- 参数值超出范围
+**Possible Causes**:
+- API Key error
+- API Key disabled
+- IP address restricted
 
-**排查步骤：**
-1. 检查是否包含所有必需参数
-2. 确认参数格式（字符串、数字等）
-3. 查看API文档确认参数范围和格式
+**Solution**:
+1. Confirm API Key is correct
+2. Log in to KTX platform, check API Key status
+3. Check IP whitelist settings
 
-## 调试技巧
+### 4. Unauthorized Operation
 
-### 1. 打印签名信息
+**Error Message**: `Unauthorized operation`
 
-```javascript
-console.log('expire_time:', expireTime);
-console.log('message:', message);
-console.log('signature:', signature);
+**Possible Causes**:
+- API Key permission insufficient
+- Account frozen or restricted
+
+**Solution**:
+1. Confirm API Key has required permissions (trade, withdraw, etc.)
+2. Check account status
+3. Contact customer support if needed
+
+## Security Best Practices
+
+### 1. API Key Management
+
+- **Do not hardcode** API Key and Secret in code
+- Store API Key and Secret in environment variables or configuration files
+- Use different API Keys for different environments (development, testing, production)
+
+### 2. Permission Control
+
+- Grant API Key only necessary permissions
+- Separate read and write permissions
+- Regularly audit API Key usage logs
+
+### 3. Security Protection
+
+- Use HTTPS protocol to encrypt transmission
+- Do not share API Key and Secret with anyone
+- Rotate API Keys periodically
+- Set IP whitelist when possible
+
+### 4. Rate Limiting
+
+- Respect API rate limit rules
+- Implement request throttling at client side
+- Handle rate limit exceptions gracefully
+
+### 5. Error Handling
+
+- Do not expose API Key and Secret in error messages
+- Log error information for troubleshooting
+- Implement retry mechanism for transient errors
+
+### 6. Signature Verification
+
+- Use official signature verification tools for testing
+- Debug signature generation process when encountering issues
+- Pay attention to parameter encoding and sorting
+
+## Signature Verification Tool
+
+KTX provides an online signature verification tool to help developers verify their signature generation logic:
+
+**Tool Address**: https://www.ktx.info/api-docs/signature-tool
+
+Usage:
+1. Enter API Key, API Secret, timestamp
+2. Select request method
+3. Fill in request path and parameters
+4. Click "Generate Signature" to view the correct signature
+5. Compare with your generated signature to troubleshoot issues
+
+## Appendix: Quick Reference
+
+### Signature String Construction
+
+**GET Request**:
+```
+timestamp + method + requestPath + queryString
 ```
 
-### 2. 使用官方测试工具
-
-KTX交易所可能提供API签名验证工具，可以用来验证签名计算是否正确。
-
-### 3. 对比时间戳
-
-```javascript
-const serverTime = await client.getTime();
-const localTime = Date.now();
-console.log('Server time:', serverTime.server_time);
-console.log('Local time:', localTime);
-console.log('Difference:', localTime - serverTime.server_time);
+**POST Request**:
+```
+timestamp + method + requestPath + body
 ```
 
-### 4. 捕获详细错误信息
+### Request Headers
 
-```javascript
-try {
-  const result = await client.someMethod();
-} catch (error) {
-  console.error('Error details:', {
-    message: error.message,
-    stack: error.stack,
-    response: error.response
-  });
-}
+```http
+APIKEY: your_api_key
+TIMESTAMP: 1234567890123
+SIGNATURE: generated_signature
 ```
 
-## 安全建议
+### Error Codes
 
-1. **不要硬编码API密钥**：使用配置文件或环境变量
-2. **使用HTTPS**：确保所有API调用都使用HTTPS协议
-3. **定期轮换密钥**：定期更换API Key和API Secret
-4. **设置IP白名单**：在交易所后台设置IP白名单限制
-5. **最小权限原则**：根据实际需求设置API Key权限
-6. **不要提交到版本控制**：将配置文件添加到.gitignore
-7. **加密存储**：对敏感数据进行加密存储
+| Error Code | Description | Solution |
+|------------|-------------|----------|
+| 400 | Request parameter error | Check request parameters |
+| 401 | Authentication failed | Check API Key and signature |
+| 403 | Permission denied | Check API Key permissions |
+| 429 | Rate limit exceeded | Reduce request frequency |
+| 500 | Server internal error | Contact customer support |
+
+## Support
+
+If you encounter issues during use, please:
+
+1. Check this documentation for solutions
+2. Use signature verification tool for debugging
+3. Contact KTX technical support: support@ktx.info
+4. Join KTX developer community for assistance
+
+---
+
+**Document Version**: 1.0
+**Last Updated**: 2025-04-10
+**KTX API Documentation**: https://www.ktx.info/api-docs
