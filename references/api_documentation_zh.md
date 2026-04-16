@@ -513,16 +513,55 @@ POST /v1/transfer
 请求参数：
 ```json
 {
-  "coin": "USDT",
-  "amount": "1000",
-  "direction": "main_to_trade"
+  "symbol": "USDT",
+  "amount": 1000,
+  "type": "WALLET_TRADE",
+  "transfer_id": "custom_id_123"
 }
 ```
 
 参数说明：
-- `coin` (必需): 币种
-- `amount` (必需): 数量
-- `direction` (必需): `main_to_trade`（钱包到交易账户）或 `trade_to_main`（交易账户到钱包）
+- `symbol` (必需): 资产代码，如 BTC、ETH、USDT 等
+- `amount` (必需): 划转数量（数字类型）
+- `type` (必需): 划转类型
+  - `WALLET_TRADE`: 从钱包账户划转到交易账户
+  - `TRADE_WALLET`: 从交易账户划转到钱包账户
+- `transfer_id` (可选): 自定义ID，最大长度为36，返回值会出现该字段用于幂等处理
+
+响应示例：
+```json
+{
+  "state": "0",
+  "result": {
+    "balance": "9000.0000000000",
+    "asset": "USDT",
+    "transfer_id": "custom_id_123",
+    "cmd": "transfer"
+  }
+}
+```
+
+使用示例：
+```javascript
+// 从钱包划转到交易账户
+await client.transfer({
+  symbol: 'USDT',
+  amount: 100,
+  type: 'WALLET_TRADE',
+  transfer_id: 'my_custom_id'
+});
+
+// 从交易账户划转到钱包
+await client.transfer({
+  symbol: 'USDT',
+  amount: 50,
+  type: 'TRADE_WALLET'
+});
+
+// 使用便捷方法
+await client.transferToTrading('USDT', 100);
+await client.transferToWallet('USDT', 50);
+```
 
 ### 14. 子账户资产划转
 

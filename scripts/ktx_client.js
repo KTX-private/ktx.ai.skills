@@ -713,15 +713,53 @@ class KTXPrivateClient {
   // ============ Asset transfer interface (requires signature) ============
 
   /**
-   * Transfer from wallet to trading account
+   * Transfer from wallet to trading account or vice versa
    */
   async transfer(params) {
     // Validate required parameters
-    if (!params.coin || !params.amount || !params.direction) {
-      throw new Error('Missing required parameters: coin, amount, direction');
+    if (!params.symbol || !params.amount || !params.type) {
+      throw new Error('Missing required parameters: symbol, amount, type');
     }
 
-    return await this.postUserData('/v1/transfer', params);
+    // Map legacy parameters for backward compatibility
+    const transferParams = {
+      symbol: params.symbol,
+      amount: params.amount,
+      type: params.type,
+      transfer_id: params.transfer_id
+    };
+
+    return await this.postUserData('/v1/transfer', transferParams);
+  }
+
+  /**
+   * Transfer from main wallet to trading account
+   */
+  async transferToTrading(symbol, amount, transferId = null) {
+    const params = {
+      symbol: symbol,
+      amount: amount,
+      type: 'WALLET_TRADE'
+    };
+    if (transferId) {
+      params.transfer_id = transferId;
+    }
+    return await this.transfer(params);
+  }
+
+  /**
+   * Transfer from trading account to main wallet
+   */
+  async transferToWallet(symbol, amount, transferId = null) {
+    const params = {
+      symbol: symbol,
+      amount: amount,
+      type: 'TRADE_WALLET'
+    };
+    if (transferId) {
+      params.transfer_id = transferId;
+    }
+    return await this.transfer(params);
   }
 
   /**
@@ -1122,6 +1160,16 @@ class KTXClient {
   async transfer(params) {
     this.ensurePrivate();
     return await this.privateClient.transfer(params);
+  }
+
+  async transferToTrading(symbol, amount, transferId = null) {
+    this.ensurePrivate();
+    return await this.privateClient.transferToTrading(symbol, amount, transferId);
+  }
+
+  async transferToWallet(symbol, amount, transferId = null) {
+    this.ensurePrivate();
+    return await this.privateClient.transferToWallet(symbol, amount, transferId);
   }
 
   async subaccountTransfer(params) {
