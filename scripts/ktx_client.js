@@ -296,6 +296,51 @@ class KTXPublicClient {
     const result = await this.getMarketData('/v1/coins');
     return this._parseResponse(result);
   }
+
+  /**
+   * Get futures mark price
+   */
+  async getMarkPrice(symbol, market = 'lpc') {
+    const params = { market };
+    if (symbol) params.symbol = symbol;
+    const result = await this.getMarketData('/v1/products', params);
+    const parsed = this._parseResponse(result);
+    
+    // Parse products and extract mark price
+    if (Array.isArray(parsed)) {
+      if (symbol) {
+        // Return specific symbol's mark price
+        const product = parsed.find(p => p.symbol === symbol);
+        return product ? {
+          symbol: product.symbol,
+          markPrice: parseFloat(product.markPrice || 0),
+          lastPrice: parseFloat(product.markPrice || 0), // Use markPrice as lastPrice since ticker data is separate
+          indexPrice: parseFloat(product.indexPrice || 0),
+          fundingRate: parseFloat(product.fundingRate || 0),
+          predictedFundingRate: parseFloat(product.predictedFundingRate || 0),
+          nextFundingTime: product.nextFundingTime ? parseInt(String(product.nextFundingTime)) : null,
+          prevFundingTime: product.prevFundingTime ? parseInt(String(product.prevFundingTime)) : null,
+          markMethod: product.markMethod,
+          market: product.market
+        } : null;
+      } else {
+        // Return all products' mark prices
+        return parsed.map(p => ({
+          symbol: p.symbol,
+          markPrice: parseFloat(p.markPrice || 0),
+          lastPrice: parseFloat(p.markPrice || 0),
+          indexPrice: parseFloat(p.indexPrice || 0),
+          fundingRate: parseFloat(p.fundingRate || 0),
+          predictedFundingRate: parseFloat(p.predictedFundingRate || 0),
+          nextFundingTime: p.nextFundingTime ? parseInt(String(p.nextFundingTime)) : null,
+          prevFundingTime: p.prevFundingTime ? parseInt(String(p.prevFundingTime)) : null,
+          markMethod: p.markMethod,
+          market: p.market
+        }));
+      }
+    }
+    return parsed;
+  }
 }
 
 /**
@@ -540,6 +585,51 @@ class KTXPrivateClient {
   async getCoins() {
     const result = await this.getMarketData('/v1/coins');
     return this._parseResponse(result);
+  }
+
+  /**
+   * Get futures mark price
+   */
+  async getMarkPrice(symbol, market = 'lpc') {
+    const params = { market };
+    if (symbol) params.symbol = symbol;
+    const result = await this.getMarketData('/v1/products', params);
+    const parsed = this._parseResponse(result);
+    
+    // Parse products and extract mark price
+    if (Array.isArray(parsed)) {
+      if (symbol) {
+        // Return specific symbol's mark price
+        const product = parsed.find(p => p.symbol === symbol);
+        return product ? {
+          symbol: product.symbol,
+          markPrice: parseFloat(product.markPrice || 0),
+          lastPrice: parseFloat(product.markPrice || 0), // Use markPrice as lastPrice since ticker data is separate
+          indexPrice: parseFloat(product.indexPrice || 0),
+          fundingRate: parseFloat(product.fundingRate || 0),
+          predictedFundingRate: parseFloat(product.predictedFundingRate || 0),
+          nextFundingTime: product.nextFundingTime ? parseInt(product.nextFundingTime) : null,
+          prevFundingTime: product.prevFundingTime ? parseInt(product.prevFundingTime) : null,
+          markMethod: product.markMethod,
+          market: product.market
+        } : null;
+      } else {
+        // Return all products' mark prices
+        return parsed.map(p => ({
+          symbol: p.symbol,
+          markPrice: parseFloat(p.markPrice || 0),
+          lastPrice: parseFloat(p.markPrice || 0),
+          indexPrice: parseFloat(p.indexPrice || 0),
+          fundingRate: parseFloat(p.fundingRate || 0),
+          predictedFundingRate: parseFloat(p.predictedFundingRate || 0),
+          nextFundingTime: p.nextFundingTime ? parseInt(p.nextFundingTime) : null,
+          prevFundingTime: p.prevFundingTime ? parseInt(p.prevFundingTime) : null,
+          markMethod: p.markMethod,
+          market: p.market
+        }));
+      }
+    }
+    return parsed;
   }
 
   // ============ Public market interface (inherits public client functionality) ============
@@ -1090,6 +1180,11 @@ class KTXClient {
     return await this.privateClient.getCoins();
   }
 
+  async getMarkPrice(symbol, market = 'lpc') {
+    if (this.isPublic) return await this.publicClient.getMarkPrice(symbol, market);
+    return await this.privateClient.getMarkPrice(symbol, market);
+  }
+
   // ============ Private interface (only available when API key is configured) ============
 
   async getAccounts() {
@@ -1250,6 +1345,14 @@ class KTXClient {
   async closeShortPosition(symbol, quantity, price = null, options = {}) {
     this.ensurePrivate();
     return await this.privateClient.closeShortPosition(symbol, quantity, price, options);
+  }
+
+  /**
+   * Get futures mark price
+   */
+  async getMarkPrice(symbol, market = 'lpc') {
+    if (this.isPublic) return await this.publicClient.getMarkPrice(symbol, market);
+    return await this.privateClient.getMarkPrice(symbol, market);
   }
 
   // ============ Spot and Futures helper methods ============
